@@ -131,26 +131,21 @@ table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:7p
 }
 </style>
 
-<style id="desktopOnlyGate">
-#mobileBlocker{display:none}
-@media (max-width: 900px), (pointer: coarse){
-  body > *:not(#mobileBlocker){display:none!important}
-  #mobileBlocker{
-    display:flex!important;min-height:100vh;align-items:center;justify-content:center;
-    text-align:center;padding:30px;font-family:Arial,sans-serif;background:#eef2f5;color:#222
-  }
-  #mobileBlocker .blockbox{background:#fff;max-width:420px;padding:28px 22px;border-radius:14px;box-shadow:0 4px 18px #0002}
-  #mobileBlocker h2{margin:0 0 10px;color:#7894a3}
-  #mobileBlocker p{line-height:1.5;margin:8px 0}
+
+
+<style id="mobileResponsive">
+@media (max-width: 900px){
+  body{margin:0!important;padding:8px!important}
+  .app,.container,.main,.wrap{max-width:100%!important;width:100%!important}
+  input,select,button,textarea{font-size:16px!important}
+  .invoice{width:100%!important;max-width:100%!important;overflow-x:auto!important}
+  .form-grid,.grid{grid-template-columns:1fr!important}
+  .actions{flex-wrap:wrap!important}
 }
 </style>
 </head>
 <body>
-<div id="mobileBlocker"><div class="blockbox">
-<h2>Manjula Infosolutions</h2>
-<p><b>This invoice web app is available on laptop/desktop only.</b></p>
-<p>Please open this link in Google Chrome on your laptop or desktop computer.</p>
-</div></div>
+
 
 <header class="no-print"><div><h1>MANJULA INFOSOLUTIONS</h1><small>Automatic Vehicle Invoice Web App</small></div><button type="button" class="gray" onclick="printInvoice()">Print / PDF</button></header>
 
