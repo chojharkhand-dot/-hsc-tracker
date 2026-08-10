@@ -68,7 +68,7 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
    <div class="muted">चुने हुए test के सामने उस दिन की quantity भरें।</div>
    <div id="dailyTestQty" class="subbox"></div>
   </div>
-  <div class="field"><label>ANC</label><input type="number" id="anc" min="0"></div><div class="field"><label>PNC</label><input type="number" id="pnc" min="0"></div><div class="field"><label>HBNC</label><input type="number" id="hbnc" min="0"></div>
+  <div class="field"><label>ANC</label><input type="number" id="ancCount" min="0"></div><div class="field"><label>PNC</label><input type="number" id="pnc" min="0"></div><div class="field"><label>HBNC</label><input type="number" id="hbnc" min="0"></div>
   <div class="field"><label>Telemedicine</label><input type="number" id="tele" min="0"></div><div class="field"><label>Referral</label><input type="number" id="referral" min="0"></div><div class="field"><label>Wellness Activity</label><input type="number" id="wellness" min="0"></div><div class="field"><label>Camp</label><input type="number" id="camp" min="0"></div>
   <div class="field"><label>Field Visit</label><input type="number" id="fieldvisit" min="0"></div><div class="field"><label>Meeting</label><input type="number" id="meeting" min="0"></div><div class="field"><label>RI Session</label><input type="number" id="ri" min="0"></div><div class="field"><label>Leave (days)</label><input type="number" id="leave" min="0"></div>
 
@@ -179,7 +179,7 @@ function loadDailyDate(){
   const d=S.daily.find(x=>x.date===$("dd").value);
   document.querySelectorAll("#dailyForm input[type=number]").forEach(i=>{if(i.id!=="dailyMedQty" && i.id!=="dailyMedName"){}});
   if(!d){dailyMedEntries=[]; $("dailyTests").selectedIndex=-1; renderDailyTestQty(); renderDailyMedList(); return;}
-  dailyKeys.forEach(k=>{if($(k))$(k).value=d[k]??0;});
+  dailyKeys.forEach(k=>{const id=(k==="ancCount"?"ancCount":k);if($(id))$(id).value=(k==="ancCount"?d.anc:d[k])??0;});
   $("dremark").value=d.remark||"";
   Array.from($("dailyTests").options).forEach(o=>o.selected=(d.testUsage||[]).some(t=>t.test===o.value));
   renderDailyTestQty();
@@ -194,7 +194,7 @@ function n(id){return +$(id).value||0}
 function table(id,heads,rows){$(id).innerHTML=rows.length?"<tr>"+heads.map(h=>`<th>${h}</th>`).join("")+"</tr>"+rows.map(r=>"<tr>"+r.map(x=>`<td>${x??""}</td>`).join("")+"</tr>").join(""):`<tr><td colspan="${heads.length}" class="empty">कोई data नहीं</td></tr>`}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 
-const dailyKeys=["opd","male","female","age05","age618","age1930","age3145","age4659","age60","ncd","htn","dm","tb","malaria","anc","pnc","hbnc","tele","referral","wellness","camp","fieldvisit","meeting","ri","leave"];
+const dailyKeys=["opd","male","female","age05","age618","age1930","age3145","age4659","age60","ncd","htn","dm","tb","malaria","ancCount","pnc","hbnc","tele","referral","wellness","camp","fieldvisit","meeting","ri","leave"];
 
 const DAILY_TESTS=["Malaria","Typhoid","Dengue","HB","RBS","HIV","Syphilis","Nischay Kit","TB Sputum","Sickle Cell","Water Test","Iodine Salt Test","HBsAg"];
 let dailyMedEntries=[];
@@ -230,7 +230,8 @@ renderDailyTestQty(); renderDailyMedList();
 $("dailyForm").onsubmit=e=>{
  e.preventDefault();
  let o={date:$("dd").value,remark:$("dremark").value};
- dailyKeys.forEach(k=>o[k]=n(k));
+ dailyKeys.forEach(k=>o[k]=(k==="ancCount"?n("ancCount"):n(k)));
+ o.anc=o.ancCount; delete o.ancCount;
  o.testUsage=selectedDailyTests().map(t=>({test:t,qty:+(document.querySelector(`[data-test-qty="${CSS.escape(t)}"]`)?.value||0)})).filter(x=>x.qty>0);
  o.medicineUsage=dailyMedEntries.map(x=>({name:x.name,qty:x.qty}));
  let idx=S.daily.findIndex(x=>x.date===o.date);
