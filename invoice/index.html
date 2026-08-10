@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manjula Infosolutions - Invoice App</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#eef2f5;color:#111}
+header{background:#7894a3;color:white;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+header h1{margin:0;font-size:24px} header small{opacity:.9}
+.container{max-width:1250px;margin:18px auto;padding:0 14px}
+.card{background:white;border-radius:10px;padding:18px;box-shadow:0 2px 10px #0001;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+label{font-weight:700;font-size:13px;display:block;margin-bottom:5px}
+input,select,button{font:inherit}input,select{width:100%;padding:9px;border:1px solid #999;border-radius:6px;background:#fff}
+button{border:0;border-radius:6px;padding:10px 14px;cursor:pointer;font-weight:700}
+.primary{background:#7894a3;color:white}.green{background:#2d7d46;color:white}.red{background:#b52b2b;color:white}.gray{background:#ddd}
+h2{font-size:18px;margin:0 0 12px;color:#7894a3}
+table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:7px}th{background:#e8eef2}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.invoice{background:white;padding:30px;max-width:1000px;margin:20px auto;display:none}
+.inv-title{text-align:center;color:#7894a3;font-size:30px;font-weight:800}
+.center{text-align:center}.right{text-align:right}.redtxt{color:red;font-weight:700}
+.line{border-bottom:2px solid #222;margin:10px 0}
+.two{display:grid;grid-template-columns:1fr 1fr}.box{border:1px solid #222;padding:8px}
+.summary td:last-child{text-align:right;font-weight:700}
+.total{font-size:18px;font-weight:800}
+@media(max-width:800px){.grid,.two{grid-template-columns:1fr 1fr}}
+@media(max-width:550px){.grid,.two{grid-template-columns:1fr}}
+@media print{
+  *{
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+    box-sizing:border-box!important;
+  }
+  html,body{
+    width:100%!important;
+    height:auto!important;
+    margin:0!important;
+    padding:0!important;
+    background:#fff!important;
+    color:#111!important;
+  }
+  .no-print{display:none!important}
+  .invoice{
+    display:block!important;
+    visibility:visible!important;
+    width:100%!important;
+    max-width:none!important;
+    height:285mm!important;
+    min-height:285mm!important;
+    margin:0!important;
+    padding:5mm!important;
+    box-shadow:none!important;
+    border:1.2px solid #222!important;
+    font-family:Arial,sans-serif!important;
+    font-size:10.5px!important;
+    line-height:1.22!important;
+    color:#111!important;
+    font-weight:400!important;
+  }
+  .invoice .inv-title{
+    font-size:27px!important;
+    line-height:1.05!important;
+    font-weight:800!important;
+    color:#7894a3!important;
+    margin:0 0 4px!important;
+  }
+  .invoice .center{
+    font-size:9.5px!important;
+    line-height:1.25!important;
+    font-weight:400!important;
+  }
+  .invoice .line{margin:5px 0!important}
+  .invoice .two{gap:0!important}
+  .invoice .box{
+    padding:6px!important;
+    font-size:10px!important;
+    line-height:1.3!important;
+  }
+  .invoice .box b,
+  .invoice b,
+  .invoice strong{
+    font-weight:700!important;
+  }
+  .invoice table{
+    width:100%!important;
+    margin-top:5px!important;
+    border-collapse:collapse!important;
+  }
+  .invoice th{
+    background:#e8eef2!important;
+    color:#111!important;
+    font-weight:700!important;
+    font-size:10px!important;
+    padding:4px 5px!important;
+    border:1px solid #222!important;
+  }
+  .invoice td{
+    font-size:9.8px!important;
+    font-weight:400!important;
+    padding:4px 5px!important;
+    line-height:1.15!important;
+    border:1px solid #222!important;
+  }
+  .invoice td b,
+  .invoice td strong{
+    font-weight:700!important;
+  }
+  .invoice .total{
+    font-size:11.5px!important;
+    font-weight:700!important;
+  }
+  .invoice .redtxt{
+    color:#ff0000!important;
+    font-size:10.5px!important;
+    font-weight:700!important;
+  }
+  .invoice > div{
+    break-inside:avoid!important;
+    page-break-inside:avoid!important;
+  }
+  .invoice table{
+    break-inside:auto!important;
+    page-break-inside:auto!important;
+  }
+  @page{
+    size:A4 portrait;
+    margin:4mm;
+  }
+}
+</style>
+
+<style id="desktopOnlyGate">
+#mobileBlocker{display:none}
+@media (max-width: 900px), (pointer: coarse){
+  body > *:not(#mobileBlocker){display:none!important}
+  #mobileBlocker{
+    display:flex!important;min-height:100vh;align-items:center;justify-content:center;
+    text-align:center;padding:30px;font-family:Arial,sans-serif;background:#eef2f5;color:#222
+  }
+  #mobileBlocker .blockbox{background:#fff;max-width:420px;padding:28px 22px;border-radius:14px;box-shadow:0 4px 18px #0002}
+  #mobileBlocker h2{margin:0 0 10px;color:#7894a3}
+  #mobileBlocker p{line-height:1.5;margin:8px 0}
+}
+</style>
+</head>
+<body>
+<div id="mobileBlocker"><div class="blockbox">
+<h2>Manjula Infosolutions</h2>
+<p><b>This invoice web app is available on laptop/desktop only.</b></p>
+<p>Please open this link in Google Chrome on your laptop or desktop computer.</p>
+</div></div>
+
+<header class="no-print"><div><h1>MANJULA INFOSOLUTIONS</h1><small>Automatic Vehicle Invoice Web App</small></div><button type="button" class="gray" onclick="printInvoice()">Print / PDF</button></header>
+
+<div class="container no-print">
+<div class="card">
+<h2>Invoice & Customer Details</h2>
+<div class="grid">
+<div><label>Invoice Number</label><input id="invoiceNoInput" value="MIS/LP/057/26-27"></div>
+<div><label>Invoice Date</label><input id="invoiceDate" type="date"></div>
+<div><label>Customer Name / Bill किसके नाम से बनाना है</label><input id="customer" placeholder="Customer का नाम"></div>
+<div><label>Customer Address</label><input id="address" placeholder="पूरा Address"></div>
+<div><label>Customer Mobile Number</label><input id="mobile" placeholder="Mobile Number"></div>
+<div><label>Vehicle Number</label><input id="mainVehicle" placeholder="e.g. JH04D3622" value="JH4D3622"></div>
+<div><label>GST Mode</label><select id="gstMode"><option>IGST</option><option>CGST+SGST</option></select></div>
+<div><label>GST Rate (%)</label><input id="gstRate" type="number" value="5" step="0.1"></div>
+<div><label>Vehicle Rent / Day</label><input id="rent" type="number" value="1475"></div>
+<div><label>Driver / Day</label><input id="driver" type="number" value="570"></div>
+<div><label>Fuel / Km</label><input id="fuel" type="number" value="9"></div>
+<div><label>Toll Tax</label><input id="toll" type="number" value="0"></div>
+<div><label>Parking</label><input id="parking" type="number" value="0"></div>
+</div>
+<div class="actions">
+<button class="gray" onclick="autoInvoiceNo()">Auto Invoice No.</button>
+</div>
+</div>
+
+<div class="card">
+<h2>Vehicle / Trip Details — Date, KM और Vehicle No. भरें | Add Trip पर अगली Date automatic आएगी</h2>
+<table id="trips">
+<thead><tr><th>Date</th><th>Distance (Km)</th><th>Vehicle No.</th><th>Action</th></tr></thead>
+<tbody></tbody>
+</table>
+<div class="actions"><button type="button" class="primary" onclick="addTrip()">+ Add Trip</button><button class="gray" onclick="clearTrips()">Clear Trips</button></div>
+</div>
+
+<div class="card">
+<h2>Automatic Calculation</h2>
+<div class="grid">
+<div><label>Total Days</label><input id="days" readonly></div>
+<div><label>Total KM</label><input id="kms" readonly></div>
+<div><label>Rent Charges</label><input id="rentTotal" readonly></div>
+<div><label>Driver Charges</label><input id="driverTotal" readonly></div>
+<div><label>Fuel Charges</label><input id="fuelTotal" readonly></div>
+<div><label>Total Before Tax</label><input id="beforeTax" readonly></div>
+<div><label>GST Amount</label><input id="gstTotal" readonly></div>
+<div><label>Final Total</label><input id="finalTotal" readonly></div>
+</div>
+<div class="actions"><button class="green" onclick="generateInvoice()">Generate Invoice</button><button type="button" class="primary" onclick="printInvoice()">Download / Save PDF</button><button class="gray" onclick="saveBill()">Save Bill</button></div>
+</div>
+</div>
+
+<div id="invoice" class="invoice">
+<div class="inv-title">MANJULA INFOSOLUTIONS</div>
+<div class="center">Address :- Main Road, Before Trendy Bazar Mall, Kalibhasan, Pakur (JH-816107)<br>
+MOB:- 6205036658 / 9570955718 &nbsp;&nbsp; GST:- 20AOPX7930Z1ZR<br>
+Gmail id:- manjulainfosolutions@gmail.com</div>
+<div class="line"></div>
+<div class="two">
+<div class="box">
+<b>Name:</b> <span id="pCustomer">The Director (ICMR VCRC)</span><br>
+<b>Address:</b> <span id="pAddress">Puducherry</span><br>
+<b>Mob. No:</b> <span id="pMobile">9560754557 / 8700850131</span>
+</div>
+<div class="box">
+<b>Invoice No.:</b> <span id="pInvoice"></span><br>
+<b>Invoice Date:</b> <span id="pDate"></span><br>
+<b>Bank Details:</b> 42 353029844 (SBI)<br>
+<b>IFSC Code:</b> SBIN0000149 (Main Branch Pakur)
+</div>
+</div>
+<div style="border:1px solid #222;margin-top:14px;padding:8px"><span class="redtxt">Charge For :-</span> Dzire, Ertiga, Scorpio, Bolero, Bus, Pickup, Tempo Traveller</div>
+<table style="margin-top:8px"><thead><tr><th>Date</th><th>Distance</th><th>Vehicle No.</th></tr></thead><tbody id="pTrips"></tbody></table>
+<div class="two" style="margin-top:8px">
+<div class="box"><b>Total km = <span id="pKm"></span> km</b><br><br><span class="redtxt">Total invoice Amount In Words :-</span><br><b id="pWords"></b></div>
+<div class="box summary">
+<table>
+<tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>
+<tr><td>Vehicle Rent</td><td id="pDaysRent"></td><td id="pRentRate"></td><td id="pRent"></td></tr>
+<tr><td>Driver Charges</td><td id="pDaysDriver"></td><td id="pDriverRate"></td><td id="pDriver"></td></tr>
+<tr><td>Fuel Charges</td><td id="pKmFuel"></td><td id="pFuelRate"></td><td id="pFuel"></td></tr>
+<tr><td>Toll Tax & Parking</td><td colspan="2">Extra</td><td id="pExtra"></td></tr>
+<tr><td colspan="3"><b>Total Amount Before Tax</b></td><td id="pBefore"></td></tr>
+<tr><td colspan="3">IGST @ 5% (Rent + Driver)</td><td id="pIgst"></td></tr>
+<tr><td colspan="3">CGST @ 2.5% (Rent + Driver)</td><td id="pCgst"></td></tr>
+<tr><td colspan="3">SGST @ 2.5% (Rent + Driver)</td><td id="pSgst"></td></tr>
+<tr><td colspan="3">Tax amount GST</td><td id="pTax"></td></tr>
+<tr class="total"><td colspan="3">Total Amount After Tax (R/O)</td><td id="pFinal"></td></tr></table>
+</div></div>
+<div class="two" style="margin-top:10px">
+<div class="box"><b style="color:#7894a3">Terms & Conditions</b><br>
+1. All claims are subject to Pakur jurisdiction.<br>
+2. Interest @24% per annum will be charged on unpaid amount after 15 days.<br>
+3. Any objection must be raised within 7 days from invoice date.<br>
+4. Time & kms calculated from garage to garage.</div>
+<div class="box" style="min-height:190px">Certified that the particulars given above are true.<br><br><br><b>For - MANJULA INFOSOLUTIONS</b><br><br><br><br><div class="center"><b>Authorized Signatory</b></div></div>
+</div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function today(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+
+function money(n){
+  return "₹" + Number(n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function numWords(n){
+  n = Math.round(Number(n)||0);
+  if(n===0) return "Zero Rupees Only";
+  const ones=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+  const tens=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  function u(x){
+    x=Math.floor(x);
+    if(x<20) return ones[x];
+    if(x<100) return tens[Math.floor(x/10)] + (x%10 ? " "+ones[x%10] : "");
+    return ones[Math.floor(x/100)]+" Hundred"+(x%100 ? " "+u(x%100) : "");
+  }
+  let s="";
+  if(Math.floor(n/10000000)){s+=u(Math.floor(n/10000000))+" Crore "; n%=10000000;}
+  if(Math.floor(n/100000)){s+=u(Math.floor(n/100000))+" Lakh "; n%=100000;}
+  if(Math.floor(n/1000)){s+=u(Math.floor(n/1000))+" Thousand "; n%=1000;}
+  if(n) s+=u(n);
+  return s.trim()+" Rupees Only";
+}
+
+function tripData(){
+  return [...$("trips").querySelectorAll("tbody tr")].map(tr=>{
+    const i=tr.querySelectorAll("input");
+    return {date:i[0].value, km:Number(i[1].value)||0, vehicle:i[2].value};
+  }).filter(x=>x.date || x.km || x.vehicle);
+}
+
+function addOneDay(dateStr){
+  if(!dateStr) return $("invoiceDate").value || today();
+  const d=new Date(dateStr+"T00:00:00");
+  d.setDate(d.getDate()+1);
+  return d.toISOString().slice(0,10);
+}
+
+function nextTripDate(){
+  const rows=[...$("trips").querySelectorAll("tbody tr")];
+  if(rows.length){
+    const lastDate=rows[rows.length-1].querySelector('input[type="date"]');
+    if(lastDate && lastDate.value) return addOneDay(lastDate.value);
+  }
+  return $("invoiceDate").value || today();
+}
+
+function updateFollowingDates(row){
+  const rows=[...$("trips").querySelectorAll("tbody tr")];
+  let idx=rows.indexOf(row);
+  if(idx<0) return;
+  for(let i=idx+1;i<rows.length;i++){
+    const prev=rows[i-1].querySelector('input[type="date"]');
+    const cur=rows[i].querySelector('input[type="date"]');
+    if(prev && cur && prev.value) cur.value=addOneDay(prev.value);
+  }
+}
+
+function addTrip(date=null, km="", vehicle=null){
+  const tripDate = date===null ? nextTripDate() : date;
+  const tripVehicle = vehicle===null ? (($("mainVehicle")&&$("mainVehicle").value)||"") : vehicle;
+
+  const tr=document.createElement("tr");
+  tr.innerHTML=
+    `<td><input type="date" value="${tripDate}"></td>`+
+    `<td><input type="number" min="0" step="0.01" value="${km}"></td>`+
+    `<td><input value="${tripVehicle}"></td>`+
+    `<td><button type="button" class="red" onclick="removeTrip(this)">Remove</button></td>`;
+
+  tr.querySelectorAll("input").forEach(x=>x.addEventListener("input",calc));
+  $("trips").querySelector("tbody").appendChild(tr);
+  calc();
+}
+
+function removeTrip(btn){
+  const row=btn.closest("tr");
+  row.remove();
+  calc();
+}
+
+function syncAllTripDates(){
+  const rows=[...$("trips").querySelectorAll("tbody tr")];
+  if(!rows.length) return;
+  const first=rows[0].querySelector('input[type="date"]');
+  if(!first || !first.value) return;
+  for(let i=1;i<rows.length;i++){
+    const prev=rows[i-1].querySelector('input[type="date"]');
+    const cur=rows[i].querySelector('input[type="date"]');
+    if(prev && cur && prev.value) cur.value=addOneDay(prev.value);
+  }
+}
+
+function clearTrips(){
+  $("trips").querySelector("tbody").innerHTML="";
+  addTrip();
+}
+
+function calc(){
+  const t=tripData();
+  const days=t.filter(x=>x.date).length;
+  const km=t.reduce((a,x)=>a+x.km,0);
+  const rent=days*Number($("rent").value||0);
+  const driver=days*Number($("driver").value||0);
+  const fuel=km*Number($("fuel").value||0);
+  const toll=Number($("toll").value||0);
+  const parking=Number($("parking").value||0);
+  const before=rent+driver+fuel+toll+parking;
+
+  // GST ONLY on Rent + Driver
+  const taxable=rent+driver;
+  const gst=taxable*Number($("gstRate").value||0)/100;
+  const final=Math.round(before+gst);
+
+  $("days").value=days;
+  $("kms").value=km.toFixed(2);
+  $("rentTotal").value=money(rent);
+  $("driverTotal").value=money(driver);
+  $("fuelTotal").value=money(fuel);
+  $("beforeTax").value=money(before);
+  $("gstTotal").value=money(gst);
+  $("finalTotal").value="₹"+final.toLocaleString("en-IN");
+
+  return {t,days,km,rent,driver,fuel,toll,parking,before,taxable,gst,final};
+}
+
+function generateInvoice(){
+  const c=calc();
+  const mode=$("gstMode").value;
+
+  $("pCustomer").textContent=$("customer").value.trim() || "";
+  $("pAddress").textContent=$("address").value.trim() || "";
+  $("pMobile").textContent=$("mobile").value.trim() || "";
+  $("pInvoice").textContent=$("invoiceNoInput").value.trim() || "MIS/LP/001";
+  $("pDate").textContent=$("invoiceDate").value
+    ? new Date($("invoiceDate").value+"T00:00:00").toLocaleDateString("en-GB") : "";
+
+  $("pKm").textContent=c.km.toFixed(2);
+  $("pWords").textContent=numWords(c.final);
+  $("pDaysRent").textContent=c.days+" Day"+(c.days===1?"":"s");
+  $("pRentRate").textContent=money(Number($("rent").value||0))+"/Day";
+  $("pRent").textContent=money(c.rent);
+  $("pDaysDriver").textContent=c.days+" Day"+(c.days===1?"":"s");
+  $("pDriverRate").textContent=money(Number($("driver").value||0))+"/Day";
+  $("pDriver").textContent=money(c.driver);
+  $("pKmFuel").textContent=c.km.toFixed(2)+" Km";
+  $("pFuelRate").textContent=money(Number($("fuel").value||0))+"/Km";
+  $("pFuel").textContent=money(c.fuel);
+  $("pExtra").textContent=money(c.toll+c.parking);
+  $("pBefore").textContent=money(c.before);
+  $("pIgst").textContent=mode==="IGST" ? money(c.gst) : money(0);
+  $("pCgst").textContent=mode==="CGST+SGST" ? money(c.gst/2) : money(0);
+  $("pSgst").textContent=mode==="CGST+SGST" ? money(c.gst/2) : money(0);
+  $("pTax").textContent=money(c.gst);
+  $("pFinal").textContent="₹"+c.final.toLocaleString("en-IN");
+
+  $("pTrips").innerHTML=c.t.map(x=>
+    `<tr><td>${x.date ? new Date(x.date+"T00:00:00").toLocaleDateString("en-GB") : ""}</td><td>${x.km}</td><td>${x.vehicle}</td></tr>`
+  ).join("");
+
+  $("invoice").style.display="block";
+  return c;
+}
+
+function printInvoice(){
+  generateInvoice();
+  setTimeout(()=>window.print(),200);
+}
+
+function saveBill(){
+  const data={
+    invoiceNo:$("invoiceNoInput").value,
+    invoiceDate:$("invoiceDate").value,
+    customer:$("customer").value,
+    address:$("address").value,
+    mobile:$("mobile").value,
+    mainVehicle:$("mainVehicle").value,
+    gstMode:$("gstMode").value,
+    gstRate:$("gstRate").value,
+    rent:$("rent").value,
+    driver:$("driver").value,
+    fuel:$("fuel").value,
+    toll:$("toll").value,
+    parking:$("parking").value,
+    trips:tripData()
+  };
+  localStorage.setItem("manjulaBill_"+data.invoiceNo,JSON.stringify(data));
+  alert("Bill saved on this laptop/browser.");
+}
+
+function autoInvoiceNo(){
+  const d=new Date(($("invoiceDate").value||today())+"T00:00:00");
+  const y=d.getFullYear(), m=d.getMonth()+1;
+  const fy=m>=4 ? `${String(y).slice(2)}-${String(y+1).slice(2)}` : `${String(y-1).slice(2)}-${String(y).slice(2)}`;
+  const saved=Number(localStorage.getItem("manjulaLastInvoice")||56)+1;
+  $("invoiceNoInput").value="MIS/LP/"+String(saved).padStart(3,"0")+"/"+fy;
+}
+
+function setupTripDateHandler(){
+  const body=$("trips").querySelector("tbody");
+  body.addEventListener("change",function(ev){
+    if(ev.target && ev.target.type==="date"){
+      const row=ev.target.closest("tr");
+      updateFollowingDates(row);
+      calc();
+    }
+  });
+}
+
+function init(){
+  $("invoiceDate").value=today();
+  if(!$("invoiceNoInput").value.trim()) autoInvoiceNo();
+
+  ["rent","driver","fuel","toll","parking","gstRate","gstMode"].forEach(id=>{
+    const el=$(id);
+    if(el) el.addEventListener("input",calc);
+    if(el) el.addEventListener("change",calc);
+  });
+
+  $("invoiceDate").addEventListener("change",function(){
+    const first=$("trips").querySelector('tbody tr input[type="date"]');
+    if(first) first.value=$("invoiceDate").value;
+    syncAllTripDates();
+    calc();
+  });
+  $("mainVehicle").addEventListener("input",calc);
+
+  setupTripDateHandler();
+
+  // Start with exactly one editable trip.
+  addTrip($("invoiceDate").value,"",$("mainVehicle").value);
+  calc();
+}
+
+window.addEventListener("beforeprint",()=>{
+  if(!$("pInvoice").textContent.trim()) generateInvoice();
+});
+
+document.addEventListener("DOMContentLoaded",init);
+</script>
+</body>
+</html>
