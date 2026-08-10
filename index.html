@@ -173,7 +173,15 @@ $("dashDate").textContent=new Date().toLocaleDateString("hi-IN",{weekday:"long",
 const defaultState={daily:[],patients:[],anc:[],med:[],meduse:[],kits:[],kituse:[],acts:[]};
 let S=JSON.parse(localStorage.getItem("HSC_TRACKER_FINAL")||"null")||defaultState;
 function persist(){localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));render()}
-function go(v){document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));$(v).classList.add("active");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.v===v));render()}
+function go(v){
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  const target=$(v);
+  if(!target)return;
+  target.classList.add("active");
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.v===v));
+  window.scrollTo({top:0,left:0,behavior:"instant"});
+  try{render()}catch(err){console.error("Render error:",err)}
+}
 
 function loadDailyDate(){
   const d=S.daily.find(x=>x.date===$("dd").value);
