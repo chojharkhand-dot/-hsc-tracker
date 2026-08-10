@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="manifest.webmanifest">
+<title>HSC Tracker Final</title>
+<style>
+:root{--p:#0f766e;--p2:#115e59;--bg:#f4f7f7;--card:#fff;--txt:#182230;--muted:#667085;--line:#e4e7ec;--red:#dc2626;--amber:#d97706;--blue:#2563eb;--green:#047857}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:linear-gradient(135deg,#115e59,#0f766e);color:#fff;padding:16px;position:sticky;top:0;z-index:20}.head{max-width:1280px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}.title{font-size:21px;font-weight:800}.sub{font-size:12px;opacity:.85}
+nav{max-width:1280px;margin:12px auto 0;display:flex;gap:6px;overflow:auto}nav button{border:0;border-radius:9px;padding:9px 11px;white-space:nowrap;background:#ffffff1c;color:#fff}nav button.active{background:#fff;color:#115e59;font-weight:700}
+main{max-width:1280px;margin:auto;padding:15px}.view{display:none}.view.active{display:block}.section{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:13px 0}.section h2{font-size:18px;margin:0}.muted{font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px;box-shadow:0 2px 8px #00000008}.stat .num{font-size:26px;font-weight:800;margin:2px 0}.tag{display:inline-block;border-radius:99px;padding:4px 8px;font-size:11px;background:#ecfdf3;color:#047857}.tag.red{background:#fef2f2;color:#b91c1c}.tag.amber{background:#fff7ed;color:#b45309}.tag.blue{background:#eff6ff;color:#1d4ed8}
+.quick{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}.quick button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px;text-align:left;font-weight:700}.quick b{font-size:22px;display:block}
+form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:flex;flex-direction:column;gap:4px}.field label{font-size:12px;color:var(--muted)}input,select,textarea{font:inherit;border:1px solid #d5d9e0;border-radius:8px;padding:9px;background:#fff;color:var(--txt)}textarea{min-height:72px}.full{grid-column:1/-1}.btn{border:0;border-radius:9px;padding:10px 14px;background:var(--p);color:#fff;font-weight:750}.btn.secondary{background:#eef6f5;color:#115e59}.btn.red{background:#fee2e2;color:#991b1b}.btn.small{padding:6px 9px;font-size:11px}
+.tablewrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px}.table{width:100%;border-collapse:collapse;min-width:850px}.table th,.table td{padding:9px;border-bottom:1px solid var(--line);font-size:12px;text-align:left;vertical-align:top}.table th{background:#f8fafc;color:#475467;position:sticky;top:0}
+.notice{padding:11px;border-radius:11px;background:#eff6ff;border:1px solid #dbeafe;color:#1e40af;font-size:12px}.danger{color:#b91c1c}.success{color:#047857}
+.searchbar{display:flex;gap:8px;flex-wrap:wrap}.searchbar input{max-width:260px}.empty{padding:25px;text-align:center;color:var(--muted)}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.quick{grid-template-columns:repeat(3,1fr)}form{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:540px){header{position:relative}main{padding:11px}.grid{gap:7px}.quick{grid-template-columns:repeat(2,1fr)}form{grid-template-columns:1fr}.full{grid-column:auto}.title{font-size:18px}}
+@media print{header,nav,.no-print{display:none!important}body{background:#fff}.view{display:none!important}.view.active{display:block}.card,.tablewrap{box-shadow:none}}
+</style>
+</head>
+<body>
+<header>
+ <div class="head"><div><div class="title">🏥 HSC Tracker</div><div class="sub">Daily • Monthly • Patient • ANC • Stock • Activities • Reports</div></div><div id="clock"></div></div>
+ <nav id="nav">
+  <button class="active" data-v="dashboard">Dashboard</button><button data-v="daily">Daily</button><button data-v="patient">OPD/Patient</button><button data-v="anc">ANC/HRP</button><button data-v="medicine">Medicine</button><button data-v="diagnostic">Diagnostic</button><button data-v="activity">Activities</button><button data-v="report">Reports</button><button data-v="backup">Backup/Settings</button>
+ </nav>
+</header>
+<main>
+
+<section id="dashboard" class="view active">
+ <div class="section"><h2>आज का Dashboard</h2><span class="muted" id="dashDate"></span></div>
+ <div class="grid" id="kpis"></div>
+ <div class="section"><h2>Quick Entry</h2></div>
+ <div class="quick">
+  <button onclick="go('daily')"><b>📝</b>Daily Report</button><button onclick="go('patient')"><b>👥</b>Patient/OPD</button><button onclick="go('anc')"><b>🤰</b>ANC / HRP</button><button onclick="go('medicine')"><b>💊</b>Medicine</button><button onclick="go('diagnostic')"><b>🧪</b>Diagnostic</button><button onclick="go('activity')"><b>📋</b>Activities</button>
+ </div>
+ <div class="section"><h2>Alerts</h2></div><div id="alerts" class="grid"></div>
+ <div class="section"><h2>आज की Report</h2></div><div class="tablewrap"><table class="table" id="todayTable"></table></div>
+</section>
+
+<section id="daily" class="view">
+ <div class="section"><h2>📝 Daily Report</h2><span class="muted">एक दिन की सभी indicators entry</span></div>
+ <div class="card"><form id="dailyForm">
+  <div class="field"><label>Date</label><input type="date" id="dd" required></div>
+  <div class="field"><label>OPD Total</label><input type="number" id="opd" min="0"></div><div class="field"><label>Male</label><input type="number" id="male" min="0"></div><div class="field"><label>Female</label><input type="number" id="female" min="0"></div>
+  <div class="field"><label>0–5 years</label><input type="number" id="age05" min="0"></div><div class="field"><label>6–18</label><input type="number" id="age618" min="0"></div><div class="field"><label>19–30</label><input type="number" id="age1930" min="0"></div><div class="field"><label>31–45</label><input type="number" id="age3145" min="0"></div><div class="field"><label>46–59</label><input type="number" id="age4659" min="0"></div><div class="field"><label>60+ Elderly</label><input type="number" id="age60" min="0"></div>
+  <div class="field"><label>NCD Screening</label><input type="number" id="ncd" min="0"></div><div class="field"><label>HTN</label><input type="number" id="htn" min="0"></div><div class="field"><label>Diabetes</label><input type="number" id="dm" min="0"></div><div class="field"><label>TB Screening</label><input type="number" id="tb" min="0"></div>
+  <div class="field"><label>Malaria/RDT</label><input type="number" id="malaria" min="0"></div><div class="field"><label>ANC</label><input type="number" id="anc" min="0"></div><div class="field"><label>PNC</label><input type="number" id="pnc" min="0"></div><div class="field"><label>HBNC</label><input type="number" id="hbnc" min="0"></div>
+  <div class="field"><label>Telemedicine</label><input type="number" id="tele" min="0"></div><div class="field"><label>Referral</label><input type="number" id="referral" min="0"></div><div class="field"><label>Wellness Activity</label><input type="number" id="wellness" min="0"></div><div class="field"><label>Camp</label><input type="number" id="camp" min="0"></div>
+  <div class="field"><label>Field Visit</label><input type="number" id="fieldvisit" min="0"></div><div class="field"><label>Meeting</label><input type="number" id="meeting" min="0"></div><div class="field"><label>RI Session</label><input type="number" id="ri" min="0"></div><div class="field"><label>Leave (days)</label><input type="number" id="leave" min="0"></div>
+  <div class="field full"><label>Remarks</label><textarea id="dremark"></textarea></div><button class="btn full">💾 Save / Update Daily Report</button>
+ </form></div>
+ <div class="section"><h2>Daily History</h2></div><div class="tablewrap"><table class="table" id="dailyTable"></table></div>
+</section>
+
+<section id="patient" class="view">
+ <div class="section"><h2>👥 OPD / Patient Register</h2><span class="muted">Patient-wise searchable record + NCD follow-up</span></div>
+ <div class="card"><form id="pform">
+  <div class="field"><label>Date</label><input type="date" id="pdate"></div><div class="field"><label>Name</label><input id="pname" required></div><div class="field"><label>Father/Spouse</label><input id="pguardian"></div><div class="field"><label>Age</label><input type="number" id="page" min="0"></div>
+  <div class="field"><label>Sex</label><select id="psex"><option>Female</option><option>Male</option><option>Other</option></select></div><div class="field"><label>Village</label><input id="pvillage"></div><div class="field"><label>Mobile</label><input id="pmobile"></div><div class="field"><label>Complaint</label><input id="pcomplaint"></div>
+  <div class="field"><label>Weight (kg)</label><input type="number" step=".1" id="pweight"></div><div class="field"><label>Height (cm)</label><input type="number" step=".1" id="pheight"></div><div class="field"><label>BP</label><input id="pbp"></div><div class="field"><label>RBS</label><input id="prbs"></div>
+  <div class="field"><label>Diagnosis / Condition</label><input id="pcondition"></div><div class="field"><label>Treatment / Medicine</label><input id="pmed"></div><div class="field"><label>Referral?</label><select id="pref"><option>No</option><option>Yes</option></select></div><div class="field"><label>Abha Status</label><select id="pabha"><option>Not recorded</option><option>Created</option><option>Linked</option></select></div>
+  <div class="field"><label>Next Follow-up</label><input type="date" id="pnext"></div><div class="field"><label>HTN/DM Follow-up?</label><select id="pncd"><option>No</option><option>HTN</option><option>Diabetes</option><option>HTN + Diabetes</option></select></div><div class="field full"><label>Remarks</label><textarea id="premark"></textarea></div>
+  <button class="btn full">💾 Save Patient</button>
+ </form></div>
+ <div class="section"><h2>Patient History</h2><div class="searchbar"><input id="psearch" placeholder="नाम / गाँव / diagnosis खोजें"></div></div>
+ <div class="tablewrap"><table class="table" id="patientTable"></table></div>
+</section>
+
+<section id="anc" class="view">
+ <div class="section"><h2>🤰 ANC / HRP Tracker</h2><span class="muted">LMP से EDD automatic + follow-up</span></div>
+ <div class="card"><form id="aform">
+  <div class="field"><label>Name</label><input id="aname" required></div><div class="field"><label>Village</label><input id="avillage" required></div><div class="field"><label>Age</label><input type="number" id="aage"></div><div class="field"><label>Mobile</label><input id="amobile"></div>
+  <div class="field"><label>LMP</label><input type="date" id="lmp" required></div><div class="field"><label>EDD</label><input id="edd" readonly></div><div class="field"><label>ANC Visit</label><select id="astage"><option>ANC 1</option><option>ANC 2</option><option>ANC 3</option><option>ANC 4</option></select></div><div class="field"><label>HRP</label><select id="ahrp"><option>No</option><option>Yes</option></select></div>
+  <div class="field"><label>HRP Reason</label><input id="areason"></div><div class="field"><label>Last Visit</label><input type="date" id="alast"></div><div class="field"><label>Next Visit</label><input type="date" id="anext"></div><div class="field"><label>Blood Group</label><input id="ablood"></div>
+  <div class="field"><label>TT/Td</label><input id="atd"></div><div class="field"><label>IFA</label><input id="aifa"></div><div class="field"><label>Calcium</label><input id="acalcium"></div><div class="field"><label>EDD Month</label><input id="aeddmonth" readonly></div>
+  <div class="field full"><label>Remarks</label><textarea id="aremark"></textarea></div><button class="btn full">💾 Save ANC Record</button>
+ </form></div>
+ <div class="section"><h2>ANC / EDD / HRP List</h2><div class="searchbar"><input id="asearch" placeholder="नाम / गाँव खोजें"></div></div>
+ <div class="tablewrap"><table class="table" id="ancTable"></table></div>
+</section>
+
+<section id="medicine" class="view">
+ <div class="section"><h2>💊 Medicine Stock</h2><span class="muted">Batch-wise stock, receipt, expiry and daily/monthly consumption</span></div>
+ <div class="card"><form id="mform">
+  <div class="field"><label>Medicine Name</label><input id="mname" required></div><div class="field"><label>Batch No.</label><input id="mbatch" required></div><div class="field"><label>Received Date</label><input type="date" id="mrec"></div><div class="field"><label>Expiry Date</label><input type="date" id="mexp" required></div><div class="field"><label>Received Qty</label><input type="number" id="mqty" min="0" required></div><div class="field"><label>Unit</label><select id="munit"><option>Tablet</option><option>Capsule</option><option>Strip</option><option>Bottle</option><option>Vial</option><option>Tube</option><option>Other</option></select></div>
+  <button class="btn full">➕ Add Medicine Batch</button>
+ </form></div>
+ <div class="card" style="margin-top:10px"><form id="museform">
+  <div class="field"><label>Medicine Batch</label><select id="mselect"></select></div><div class="field"><label>Date</label><input type="date" id="musedate"></div><div class="field"><label>Consumed Qty</label><input type="number" id="muse" min="0"></div><div class="field"><label>Reason</label><input id="musereason" placeholder="OPD / Camp / other"></div><button class="btn">💾 Save Consumption</button>
+ </form></div>
+ <div class="section"><h2>Current Stock</h2></div><div class="tablewrap"><table class="table" id="medTable"></table></div>
+</section>
+
+<section id="diagnostic" class="view">
+ <div class="section"><h2>🧪 Diagnostic Kit & Test Tracker</h2><span class="muted">Kit stock + test count + result summary</span></div>
+ <div class="card"><form id="kform"><div class="field"><label>Test / Kit</label><input id="kname" required></div><div class="field"><label>Batch</label><input id="kbatch" required></div><div class="field"><label>Received Date</label><input type="date" id="krec"></div><div class="field"><label>Expiry</label><input type="date" id="kexp" required></div><div class="field"><label>Quantity</label><input type="number" id="kqty" min="0" required></div><button class="btn full">➕ Add Kit</button></form></div>
+ <div class="card" style="margin-top:10px"><form id="kuseform"><div class="field"><label>Test/Kit</label><select id="kselect"></select></div><div class="field"><label>Date</label><input type="date" id="kusedate"></div><div class="field"><label>Tests Used</label><input type="number" id="kuse" min="0"></div><div class="field"><label>Positive</label><input type="number" id="kpositive" min="0"></div><div class="field"><label>Negative</label><input type="number" id="knegative" min="0"></div><button class="btn">💾 Save Test Usage</button></form></div>
+ <div class="section"><h2>Kit Stock</h2></div><div class="tablewrap"><table class="table" id="kitTable"></table></div>
+</section>
+
+<section id="activity" class="view">
+ <div class="section"><h2>📋 Activities</h2><span class="muted">Telemedicine, wellness, camp, field visit, leave, meeting, RI...</span></div>
+ <div class="card"><form id="actform"><div class="field"><label>Date</label><input type="date" id="actdate"></div><div class="field"><label>Activity</label><select id="acttype"><option>Telemedicine</option><option>Wellness Activity</option><option>Camp</option><option>Field Visit</option><option>Meeting</option><option>Leave</option><option>RI Session</option><option>Health Awareness</option><option>NCD Drive</option><option>TB Drive</option><option>HBNC Visit</option><option>PNC Visit</option></select></div><div class="field"><label>Count/Days</label><input type="number" id="actcount" value="1" min="0"></div><div class="field"><label>Village/Place</label><input id="actplace"></div><div class="field full"><label>Remarks</label><textarea id="actremark"></textarea></div><button class="btn full">💾 Save Activity</button></form></div>
+ <div class="section"><h2>Activity History</h2></div><div class="tablewrap"><table class="table" id="actTable"></table></div>
+</section>
+
+<section id="report" class="view">
+ <div class="section"><h2>📊 Reports</h2><span class="muted">Day-wise / Month-wise / Village-wise</span></div>
+ <div class="card"><form id="rform"><div class="field"><label>Month</label><input type="month" id="rmonth"></div><div class="field"><label>Specific Date (optional)</label><input type="date" id="rdate"></div><div class="field"><label>Village (ANC)</label><input id="rvillage"></div><button class="btn">🔎 Generate</button><button type="button" class="btn secondary" onclick="window.print()">🖨️ Print / Save PDF</button></form></div>
+ <div class="section"><h2>Summary</h2></div><div class="grid" id="summary"></div>
+ <div class="section"><h2>Age-wise OPD</h2></div><div class="tablewrap"><table class="table" id="ageTable"></table></div>
+ <div class="section"><h2>Medicine Consumption</h2></div><div class="tablewrap"><table class="table" id="medReport"></table></div>
+ <div class="section"><h2>Diagnostic Usage</h2></div><div class="tablewrap"><table class="table" id="kitReport"></table></div>
+ <div class="section"><h2>ANC / EDD / HRP</h2></div><div class="tablewrap"><table class="table" id="ancReport"></table></div>
+ <div class="section"><h2>Activities</h2></div><div class="tablewrap"><table class="table" id="activityReport"></table></div>
+</section>
+
+<section id="backup" class="view">
+ <div class="section"><h2>⚙️ Backup & Settings</h2><span class="muted">आपके data की सुरक्षा के लिए</span></div>
+ <div class="grid">
+  <div class="card"><h3>💾 Backup</h3><p class="muted">पूरा data एक JSON file में export करें।</p><button class="btn" onclick="backup()">Download Backup</button></div>
+  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json"></div>
+  <div class="card"><h3>📊 CSV Export</h3><p class="muted">Daily, ANC, medicine, diagnostic और activity data अलग-अलग CSV में निकालें।</p><button class="btn" onclick="exportCSV()">Export CSV ZIP</button></div>
+  <div class="card"><h3>🧹 Reset</h3><p class="muted danger">सारा local data हट जाएगा।</p><button class="btn red" onclick="resetData()">Reset All Data</button></div>
+ </div>
+ <div class="notice" style="margin-top:12px"><b>महत्वपूर्ण:</b> यह final offline-first web-app prototype है। Data इस browser/device में रहता है। अलग-अलग mobile/laptop में automatic sync के लिए secure cloud backend और HTTPS hosting जोड़ना अगला deployment step होगा।</div>
+</section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const today=new Date().toISOString().slice(0,10), thisMonth=today.slice(0,7);
+$("clock").textContent=new Date().toLocaleDateString("hi-IN",{day:"2-digit",month:"short",year:"numeric"});
+$("dashDate").textContent=new Date().toLocaleDateString("hi-IN",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
+["dd","pdate","actdate","mrec","musedate","krec","kusedate","rdate"].forEach(id=>$(id).value=today); $("rmonth").value=thisMonth;
+
+const defaultState={daily:[],patients:[],anc:[],med:[],meduse:[],kits:[],kituse:[],acts:[]};
+let S=JSON.parse(localStorage.getItem("HSC_TRACKER_FINAL")||"null")||defaultState;
+function persist(){localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));render()}
+function go(v){document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));$(v).classList.add("active");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.v===v));render()}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.v));
+function n(id){return +$(id).value||0}
+function table(id,heads,rows){$(id).innerHTML=rows.length?"<tr>"+heads.map(h=>`<th>${h}</th>`).join("")+"</tr>"+rows.map(r=>"<tr>"+r.map(x=>`<td>${x??""}</td>`).join("")+"</tr>").join(""):`<tr><td colspan="${heads.length}" class="empty">कोई data नहीं</td></tr>`}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+const dailyKeys=["opd","male","female","age05","age618","age1930","age3145","age4659","age60","ncd","htn","dm","tb","malaria","anc","pnc","hbnc","tele","referral","wellness","camp","fieldvisit","meeting","ri","leave"];
+$("dailyForm").onsubmit=e=>{e.preventDefault();let o={date:$("dd").value,remark:$("dremark").value};dailyKeys.forEach(k=>o[k]=n(k));let idx=S.daily.findIndex(x=>x.date===o.date);if(idx>=0)S.daily[idx]=o;else S.daily.push(o);persist();alert("Daily report saved / updated")};
+
+$("pform").onsubmit=e=>{e.preventDefault();S.patients.push({date:$("pdate").value,name:$("pname").value,guardian:$("pguardian").value,age:n("page"),sex:$("psex").value,village:$("pvillage").value,mobile:$("pmobile").value,complaint:$("pcomplaint").value,weight:$("pweight").value,height:$("pheight").value,bp:$("pbp").value,rbs:$("prbs").value,condition:$("pcondition").value,med:$("pmed").value,ref:$("pref").value,abha:$("pabha").value,next:$("pnext").value,ncd:$("pncd").value,remark:$("premark").value});persist();e.target.reset();$("pdate").value=today;alert("Patient saved")};
+
+function calcEDD(){if(!$("lmp").value){$("edd").value="";$("aeddmonth").value="";return}let d=new Date($("lmp").value);d.setDate(d.getDate()+280);let x=d.toISOString().slice(0,10);$("edd").value=x;$("aeddmonth").value=x.slice(0,7)}
+$("lmp").oninput=calcEDD;
+$("aform").onsubmit=e=>{e.preventDefault();calcEDD();S.anc.push({name:$("aname").value,village:$("avillage").value,age:n("aage"),mobile:$("amobile").value,lmp:$("lmp").value,edd:$("edd").value,stage:$("astage").value,hrp:$("ahrp").value,reason:$("areason").value,last:$("alast").value,next:$("anext").value,blood:$("ablood").value,td:$("atd").value,ifa:$("aifa").value,calcium:$("acalcium").value,remark:$("aremark").value});persist();e.target.reset();alert("ANC record saved")};
+
+$("mform").onsubmit=e=>{e.preventDefault();S.med.push({name:$("mname").value,batch:$("mbatch").value,received:$("mrec").value,expiry:$("mexp").value,qty:n("mqty"),unit:$("munit").value});persist();e.target.reset();alert("Medicine batch added")};
+$("museform").onsubmit=e=>{e.preventDefault();S.meduse.push({med:+$("mselect").value,date:$("musedate").value,qty:n("muse"),reason:$("musereason").value});persist();alert("Medicine consumption saved")};
+$("kform").onsubmit=e=>{e.preventDefault();S.kits.push({name:$("kname").value,batch:$("kbatch").value,received:$("krec").value,expiry:$("kexp").value,qty:n("kqty")});persist();e.target.reset();alert("Diagnostic kit added")};
+$("kuseform").onsubmit=e=>{e.preventDefault();S.kituse.push({kit:+$("kselect").value,date:$("kusedate").value,qty:n("kuse"),positive:n("kpositive"),negative:n("knegative")});persist();alert("Diagnostic usage saved")};
+$("actform").onsubmit=e=>{e.preventDefault();S.acts.push({date:$("actdate").value,type:$("acttype").value,count:n("actcount"),place:$("actplace").value,remark:$("actremark").value});persist();alert("Activity saved")};
+$("rform").onsubmit=e=>{e.preventDefault();renderReports()};
+$("psearch").oninput=renderPatient; $("asearch").oninput=renderANC;
+
+function medUsed(i,from="",to=""){return S.meduse.filter(x=>x.med===i&&(!from||x.date>=from)&&(!to||x.date<=to)).reduce((a,x)=>a+x.qty,0)}
+function kitUsed(i,from="",to=""){return S.kituse.filter(x=>x.kit===i&&(!from||x.date>=from)&&(!to||x.date<=to)).reduce((a,x)=>a+x.qty,0)}
+
+function renderPatient(){let q=($("psearch").value||"").toLowerCase();let a=S.patients.filter(x=>[x.name,x.village,x.condition,x.mobile].join(" ").toLowerCase().includes(q));table("patientTable",["Date","Name","Village","Age","Sex","Complaint","BP","RBS","Condition","NCD FU","Next FU","Abha"],a.slice().reverse().map(x=>[x.date,x.name,x.village,x.age,x.sex,x.complaint,x.bp,x.rbs,x.condition,x.ncd,x.next,x.abha]))}
+function renderANC(){let q=($("asearch").value||"").toLowerCase();let a=S.anc.filter(x=>[x.name,x.village].join(" ").toLowerCase().includes(q));table("ancTable",["Name","Village","Age","LMP","EDD","Visit","HRP","Reason","Next Visit","Blood","IFA","Calcium"],a.slice().reverse().map(x=>[x.name,x.village,x.age,x.lmp,x.edd,x.stage,x.hrp==="Yes"?'<span class="tag red">HRP</span>':"No",x.reason,x.next,x.blood,x.ifa,x.calcium]))}
+
+function renderReports(){
+ let mo=$("rmonth").value||thisMonth, specific=$("rdate").value||"", village=($("rvillage").value||"").toLowerCase();
+ let ds=S.daily.filter(x=>specific?x.date===specific:x.date.startsWith(mo)), from=specific||mo+"-01", to=specific||mo+"-31";
+ let sum=k=>ds.reduce((a,x)=>a+(+x[k]||0),0);
+ const cards=[["OPD","opd"],["Male","male"],["Female","female"],["Children 0–5","age05"],["NCD","ncd"],["HTN","htn"],["Diabetes","dm"],["TB","tb"],["ANC","anc"],["PNC","pnc"],["HBNC","hbnc"],["Telemedicine","tele"],["Wellness","wellness"],["Camp","camp"],["Field Visit","fieldvisit"],["RI","ri"]];
+ $("summary").innerHTML=cards.map(a=>`<div class="card stat"><div class="muted">${a[0]}</div><div class="num">${sum(a[1])}</div></div>`).join("");
+ let ages=[["0–5","age05"],["6–18","age618"],["19–30","age1930"],["31–45","age3145"],["46–59","age4659"],["60+","age60"]];table("ageTable",["Age Group","Count"],ages.map(a=>[a[0],sum(a[1])]));
+ table("medReport",["Medicine","Batch","Consumption"],S.med.map((m,i)=>[m.name,m.batch,medUsed(i,from,to)]));
+ table("kitReport",["Test/Kit","Batch","Tests","Positive","Negative"],S.kits.map((k,i)=>{let u=S.kituse.filter(x=>x.kit===i&&x.date>=from&&x.date<=to);return[k.name,k.batch,u.reduce((a,x)=>a+x.qty,0),u.reduce((a,x)=>a+x.positive,0),u.reduce((a,x)=>a+x.negative,0)]}));
+ let aa=S.anc.filter(x=>(!village||x.village.toLowerCase().includes(village))&&((x.edd||"").startsWith(mo)||x.lmp.startsWith(mo)));let stages=["ANC 1","ANC 2","ANC 3","ANC 4"].map(s=>[s,aa.filter(x=>x.stage===s).length]);table("ancReport",["Indicator","Count"],[...stages,["HRP",aa.filter(x=>x.hrp==="Yes").length],["EDD in selected month",aa.filter(x=>(x.edd||"").startsWith(mo)).length]]);
+ let ac=S.acts.filter(x=>x.date>=from&&x.date<=to);table("activityReport",["Activity","Count"],[...new Set(S.acts.map(x=>x.type))].map(t=>[t,ac.filter(x=>x.type===t).reduce((a,x)=>a+x.count,0)]));
+}
+
+function render(){
+ let d=S.daily.find(x=>x.date===today)||{};
+ let cards=[["OPD","opd"],["ANC","anc"],["NCD","ncd"],["TB","tb"],["Telemedicine","tele"],["Wellness","wellness"],["Camp","camp"],["HBNC","hbnc"],["Referral","referral"],["RI","ri"]];
+ $("kpis").innerHTML=cards.map(a=>`<div class="card stat"><div class="muted">${a[0]}</div><div class="num">${d[a[1]]||0}</div><span class="tag">आज</span></div>`).join("");
+ let alerts=[];
+ S.med.forEach((m,i)=>{let b=m.qty-medUsed(i);if(b<=20)alerts.push(`<div class="card"><b>💊 ${esc(m.name)}</b><div class="muted">Batch ${esc(m.batch)} • Balance ${b}</div><span class="tag red">Low Stock</span></div>`);if(m.expiry&&m.expiry<=new Date(Date.now()+45*86400000).toISOString().slice(0,10))alerts.push(`<div class="card"><b>⚠️ ${esc(m.name)}</b><div class="muted">Expiry ${m.expiry}</div><span class="tag amber">Near Expiry</span></div>`)});
+ S.kits.forEach((k,i)=>{let b=k.qty-kitUsed(i);if(b<=10)alerts.push(`<div class="card"><b>🧪 ${esc(k.name)}</b><div class="muted">Balance ${b}</div><span class="tag red">Low Stock</span></div>`)});
+ S.anc.filter(a=>a.hrp==="Yes"||a.next===today).slice(-5).forEach(a=>alerts.push(`<div class="card"><b>🤰 ${esc(a.name)}</b><div class="muted">${esc(a.village)} • EDD ${a.edd}</div><span class="tag red">${a.hrp==="Yes"?"HRP":"Follow-up today"}</span></div>`));
+ $("alerts").innerHTML=alerts.join("")||'<div class="card"><b>✅ कोई urgent alert नहीं</b></div>';
+ table("todayTable",["Indicator","Value"],[["OPD",d.opd],["Male",d.male],["Female",d.female],["0–5",d.age05],["6–18",d.age618],["NCD",d.ncd],["HTN",d.htn],["Diabetes",d.dm],["TB",d.tb],["ANC",d.anc],["Telemedicine",d.tele],["Camp",d.camp],["Field Visit",d.fieldvisit]]);
+ table("dailyTable",["Date","OPD","Male","Female","0–5","6–18","19–30","31–45","46–59","60+","NCD","HTN","DM","TB","ANC","Tele","Camp","Field"],S.daily.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,60).map(x=>[x.date,x.opd,x.male,x.female,x.age05,x.age618,x.age1930,x.age3145,x.age4659,x.age60,x.ncd,x.htn,x.dm,x.tb,x.anc,x.tele,x.camp,x.fieldvisit]));
+ renderPatient();renderANC();
+ $("mselect").innerHTML=S.med.map((m,i)=>`<option value="${i}">${esc(m.name)} — ${esc(m.batch)}</option>`).join("");
+ table("medTable",["Medicine","Batch","Expiry","Received","Used","Balance","Unit","Status"],S.med.map((m,i)=>{let u=medUsed(i),b=m.qty-u;return[m.name,m.batch,m.expiry,m.qty,u,b,b<=20?'<span class="tag red">Low</span>':'<span class="tag">OK</span>',m.unit]}));
+ $("kselect").innerHTML=S.kits.map((k,i)=>`<option value="${i}">${esc(k.name)} — ${esc(k.batch)}</option>`).join("");
+ table("kitTable",["Test/Kit","Batch","Expiry","Qty","Used","Balance","Status"],S.kits.map((k,i)=>{let u=kitUsed(i),b=k.qty-u;return[k.name,k.batch,k.expiry,k.qty,u,b,b<=10?'<span class="tag red">Low</span>':'<span class="tag">OK</span>']}));
+ table("actTable",["Date","Activity","Count","Place","Remarks"],S.acts.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,80).map(x=>[x.date,x.type,x.count,x.place,x.remark]));
+ renderReports();
+}
+
+function backup(){let blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="HSC_Tracker_Backup_"+today+".json";a.click();URL.revokeObjectURL(a.href)}
+$("restoreFile").onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!x.daily||!x.anc||!x.med)throw Error();S=x;persist();alert("Backup restored")}catch{alert("Invalid backup file")}}
+function csv(rows){return rows.map(r=>r.map(x=>`"${String(x??"").replaceAll('"','""')}"`).join(",")).join("\n")}
+function downloadText(name,text,type="text/csv"){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+text],{type}));a.download=name;a.click()}
+function exportCSV(){downloadText("daily.csv",csv([Object.keys(S.daily[0]||{date:"date"}),...S.daily.map(x=>Object.values(x))]));setTimeout(()=>downloadText("anc.csv",csv([Object.keys(S.anc[0]||{name:"name"}),...S.anc.map(x=>Object.values(x))])),200);setTimeout(()=>downloadText("medicine.csv",csv([["Medicine","Batch","Expiry","Qty","Used","Balance"],...S.med.map((m,i)=>[m.name,m.batch,m.expiry,m.qty,medUsed(i),m.qty-medUsed(i)])])),400);setTimeout(()=>downloadText("diagnostic.csv",csv([["Test","Batch","Expiry","Qty","Used","Balance"],...S.kits.map((k,i)=>[k.name,k.batch,k.expiry,k.qty,kitUsed(i),k.qty-kitUsed(i)])])),600)}
+function resetData(){if(confirm("सारा data delete करना है?")){S=JSON.parse(JSON.stringify(defaultState));persist();alert("Data reset")}}
+render();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body></html>
