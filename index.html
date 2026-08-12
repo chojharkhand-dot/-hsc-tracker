@@ -59,7 +59,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 <header>
  <div class="head"><div><div class="title">🏥 HSC Tracker</div><div class="sub">Daily • Monthly • Patient • ANC • Stock • Activities • Reports</div></div><div id="clock"></div></div>
  <nav id="nav">
-  <button class="active" data-v="dashboard">Dashboard</button><button data-v="daily">Daily</button><button data-v="patient">OPD/Patient</button><button data-v="anc">ANC/HRP</button><button data-v="ncd">❤️ NCD</button><button data-v="tb">🫁 TB</button><button data-v="medicine">Medicine</button><button data-v="diagnostic">Diagnostic</button><button data-v="activity">Activities</button><button data-v="report">Reports</button><button data-v="alerts">🔔 Alerts</button><button data-v="village">🏘️ Village/Tola</button><button data-v="ri">💉 RI Schedule</button><button data-v="delivery">👶 Delivery/HBNC</button><button data-v="bulk">📥 Bulk Import</button><button data-v="backup">Backup/Settings</button>
+  <button class="active" data-v="dashboard">Dashboard</button><button data-v="daily">Daily</button><button data-v="patient">OPD/Patient</button><button data-v="anc">ANC/HRP</button><button data-v="ncd">❤️ NCD</button><button data-v="tb">🫁 TB</button><button data-v="medicine">Medicine</button><button data-v="fpsupply">🟣 FP & Sahiya Supply</button><button data-v="diagnostic">Diagnostic</button><button data-v="activity">Activities</button><button data-v="report">Reports</button><button data-v="alerts">🔔 Alerts</button><button data-v="village">🏘️ Village/Tola</button><button data-v="ri">💉 RI Schedule</button><button data-v="delivery">👶 Delivery/HBNC</button><button data-v="bulk">📥 Bulk Import</button><button data-v="backup">Backup/Settings</button>
  </nav>
 </header>
 <main>
@@ -168,6 +168,55 @@ body.report-print-mode #printArea{display:block!important;position:static!import
   <div class="field"><label>Medicine Batch</label><select id="mselect"></select></div><div class="field"><label>Date</label><input type="date" id="musedate"></div><div class="field"><label>Consumed Qty</label><input type="number" id="muse" min="0"></div><div class="field"><label>Reason</label><input id="musereason" placeholder="OPD / Camp / other"></div><button class="btn">💾 Save Consumption</button><div class="muted">यहाँ से भी उसी batch का stock कम होगा। Daily Report से दर्ज consumption अलग से duplicate नहीं होगी।</div>
  </form></div>
  <div class="section"><h2>Current Stock</h2></div><div class="tablewrap"><table class="table" id="medTable"></table></div>
+</section>
+
+<section id="fpsupply" class="view">
+ <div class="section"><h2>🟣 Family Planning & Sahiya Supply</h2><span class="muted">Family Planning + Sahiya को दिए गए सभी commodities + Camp consumption</span></div>
+ <div class="grid">
+  <div class="card stat"><div class="muted">Current Stock</div><div class="num" id="fpStockTotal">0</div><span class="tag">Balance</span></div>
+  <div class="card stat"><div class="muted">Today Used/Given</div><div class="num" id="fpTodayQty">0</div><span class="tag">आज</span></div>
+  <div class="card stat"><div class="muted">This Month</div><div class="num" id="fpMonthQty">0</div><span class="tag">कुल खपत</span></div>
+  <div class="card stat"><div class="muted">Low / Expiring</div><div class="num" id="fpAlerts">0</div><span class="tag red">Alert</span></div>
+ </div>
+ <div class="card" style="margin-top:10px"><h3>📦 Commodity / Batch Master</h3>
+  <form id="fpStockForm">
+   <div class="field"><label>Item / Commodity</label><input id="fpName" required placeholder="Condom / Antara / Chhaya / Easy Pill / Cu-IUCD / IFA / Calcium / ORS"></div>
+   <div class="field"><label>Category</label><select id="fpCategory"><option>Family Planning</option><option>IFA</option><option>Calcium</option><option>Zinc</option><option>ORS</option><option>Medicine/Commodity</option><option>Other</option></select></div>
+   <div class="field"><label>Batch No.</label><input id="fpBatch" required></div>
+   <div class="field"><label>Mfg Date</label><input type="date" id="fpMfg"></div>
+   <div class="field"><label>Expiry Date</label><input type="date" id="fpExp" required></div>
+   <div class="field"><label>Opening Qty</label><input type="number" id="fpOpening" min="0" value="0"></div>
+   <div class="field"><label>Received Qty</label><input type="number" id="fpReceived" min="0" value="0"></div>
+   <div class="field"><label>Unit</label><input id="fpUnit" value="Piece" placeholder="Piece / Tablet / Bottle / Strip"></div>
+   <button class="btn full">➕ Add / Update Batch Stock</button>
+  </form>
+ </div>
+ <div class="card" style="margin-top:10px"><h3>👩‍⚕️ Sahiya Supply / 🏥 Camp Consumption</h3>
+  <form id="fpTxForm">
+   <div class="field"><label>Date</label><input type="date" id="fptDate" required></div>
+   <div class="field"><label>Type</label><select id="fptType"><option value="sahiya">Sahiya को दिया</option><option value="camp">Camp में खर्च</option></select></div>
+   <div class="field"><label>Item / Batch</label><select id="fptStock" required></select></div>
+   <div class="field"><label>Quantity</label><input type="number" id="fptQty" min="1" required></div>
+   <div class="field" id="fpSahiyaWrap"><label>Sahiya Name</label><input id="fptSahiya"></div>
+   <div class="field" id="fpVillageWrap"><label>Village</label><input id="fptVillage"></div>
+   <div class="field"><label>Purpose / Camp</label><input id="fptPurpose"></div>
+   <div class="field full"><label>Remarks</label><textarea id="fptRemark"></textarea></div>
+   <button class="btn full">💾 Save Supply / Consumption</button>
+  </form>
+ </div>
+ <div class="section"><h3>📦 Current Stock</h3></div><div class="tablewrap"><table class="table" id="fpStockTable"></table></div>
+ <div class="section"><h3>📋 Sahiya-wise / Item-wise / Village-wise Report</h3></div>
+ <div class="card"><div class="grid">
+  <div class="field"><label>Scope</label><select id="fpReportMode"><option value="day">Day-wise</option><option value="month">Month-wise</option><option value="all">All-time</option></select></div>
+  <div class="field" id="fpReportDateWrap"><label>Date</label><input type="date" id="fpReportDate"></div>
+  <div class="field" id="fpReportMonthWrap"><label>Month / Year</label><input type="month" id="fpReportMonth"></div>
+  <div class="field"><label>Sahiya</label><input id="fpReportSahiya"></div>
+  <div class="field"><label>Village</label><input id="fpReportVillage"></div>
+  <div class="field"><label>Item</label><input id="fpReportItem"></div>
+ </div>
+ <button type="button" class="btn" id="fpGenerateReport">🔎 Generate Supply Report</button>
+ <button type="button" class="btn secondary" id="fpExportReport">📥 Export CSV</button></div>
+ <div class="tablewrap"><table class="table" id="fpReportTable"></table></div>
 </section>
 
 <section id="diagnostic" class="view">
@@ -303,7 +352,7 @@ $("clock").textContent=new Date().toLocaleDateString("hi-IN",{day:"2-digit",mont
 $("dashDate").textContent=new Date().toLocaleDateString("hi-IN",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
 ["dd","pdate","actdate","mrec","musedate","krec","kusedate"].forEach(id=>$(id).value=today); $("rmonth").value=""; $("rdate").value=""; $("rmode").value="all";
 
-const defaultState={daily:[],patients:[],anc:[],med:[],meduse:[],kits:[],kituse:[],acts:[],villages:[],ri:[],deliveries:[]};
+const defaultState={daily:[],patients:[],anc:[],med:[],meduse:[],kits:[],kituse:[],acts:[],villages:[],ri:[],deliveries:[],fpStock:[],fpTx:[]};
 const EXCEL_MEDICINE_STOCK=[{"name": "Amoxycillin Oral Suspension IP 125 mg/5 ml (Ceemox)", "batch": "ADBS1058", "mfg": "2025-09-01", "expiry": "2027-02-01", "qty": 17, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Chloroquine Phosphate Oral Suspension IP 50 mg/5 ml", "batch": "L24/0412A", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 29, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Diphenhydramine Hydrochloride, Ammonium Chloride & Sodium Citrate Syrup (Cough Syrup)", "batch": "CEKS24042", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 43, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Oral Suspension IP", "batch": "L24/0407A", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 16, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Mefenamic Acid Oral Suspension", "batch": "JDL-3497", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 33, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin & Metronidazole Suspension (TOFF-M)", "batch": "MLS25283", "mfg": "2025-04-01", "expiry": "2027-03-01", "qty": 4, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Paracetamol Paediatric Suspension IP 125 mg (BIOCETAMOL-125, 60 ml)", "batch": "SPA251556", "mfg": "2025-08-01", "expiry": "2027-07-01", "qty": 80, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Albendazole Tablets IP", "batch": "CQU02ACA", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 76, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Allopurinol Tablets IP 100 mg (CGNOL-100)", "batch": "CT24251163B", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Amlodipine Tablets IP 5 mg", "batch": "SPAC26005", "mfg": "2026-01-01", "expiry": "2027-12-01", "qty": 400, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Amoxycillin Capsules IP 250 mg", "batch": "4172006", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 200, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ampicillin Injection IP 1 g", "batch": "K3190", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 20, "unit": "Vial", "source": "Excel 12-08-2026"}, {"name": "Atenolol Tablets IP 25 mg (Atenopress-25)", "batch": "SPA250926", "mfg": "2025-05-01", "expiry": "2027-04-01", "qty": 42, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Atorvastatin Tablets IP 10 mg", "batch": "15303124", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 100, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Azithromycin Tablets IP 250 mg", "batch": "61501124A", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 192, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Azithromycin Tablets IP 500 mg", "batch": "SPA250563", "mfg": "2025-03-01", "expiry": "2028-02-01", "qty": 133, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Budenase AQ Nasal Spray", "batch": "45A2843", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 5, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cefixime Tablets IP 200 mg", "batch": "14402324", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 90, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cefixime Tablets USP 400 mg", "batch": "T-3287", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 300, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cetirizine Tablets I.P. 10 mg", "batch": "11200924", "mfg": "2024-05-01", "expiry": "2027-04-01", "qty": 80, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cholecalciferol Soft Gelatin Capsules USP (Cartiflex D3)", "batch": "AMS-0202", "mfg": "2025-03-01", "expiry": "2027-02-01", "qty": 39, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ciprofloxacin Hydrochloride Eye Drops IP (Cip Drop)", "batch": "M026C3B", "mfg": "2026-03-01", "expiry": "2028-02-01", "qty": 3, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ciprofloxacin Hydrochloride Tablets I.P. 500 mg", "batch": "CPFT24028", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 300, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Clotrimazole Cream I.P. 1% w/w", "batch": "180-150", "mfg": "2024-09-01", "expiry": "2026-08-01", "qty": 3, "unit": "Tube", "source": "Excel 12-08-2026"}, {"name": "Dexamethasone Sodium Phosphate Injection", "batch": "JDP-1348", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 50, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Diclofenac Sodium and Paracetamol Tablets I.P.", "batch": "11701624", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 24, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Dicyclomine Hydrochloride and Paracetamol Tablets", "batch": "19001424", "mfg": "2024-09-01", "expiry": "2027-08-01", "qty": 200, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Doxycycline Capsules I.P. 100 mg", "batch": "16201824", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 100, "unit": "Capsule", "source": "Excel 12-08-2026"}, {"name": "Erythromycin Stearate Tablets IP 500 mg (ERYCON-500)", "batch": "AGT50354", "mfg": "2025-03-01", "expiry": "2028-02-01", "qty": 500, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Griseofulvin Tablets IP 250 mg", "batch": "T-4624", "mfg": "2025-02-01", "expiry": "2027-01-01", "qty": 20, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen and Paracetamol Tablets IP", "batch": "15602324", "mfg": "2024-07-01", "expiry": "2027-06-01", "qty": 52, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Tablets I.P. 200 mg", "batch": "15300524", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 250, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Tablets I.P. 400 mg", "batch": "15402924", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 108, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Levocetirizine Tablets IP", "batch": "SPA251624", "mfg": "2025-08-01", "expiry": "2027-07-01", "qty": 250, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Metformin Hydrochloride (SR) Tablets IP 1000 mg", "batch": "JDT-8551", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 40, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin and Ornidazole Tablets I.P.", "batch": "16002824", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin and Ornidazole Tablets I.P.", "batch": "16003024", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Omeprazole and Domperidone Capsules IP", "batch": "15901224", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 364, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ondansetron Tablets IP 4 mg", "batch": "18006030022261", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 100, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Oral Rehydration Salts IP (ORS)", "batch": "CHPLO-084", "mfg": "2025-06-01", "expiry": "2027-05-01", "qty": 121, "unit": "Packet", "source": "Excel 12-08-2026"}, {"name": "Paracetamol Tablets IP 650 mg (BIOCETAMOL-650)", "batch": "SPAC25068", "mfg": "2025-09-01", "expiry": "2028-08-01", "qty": 450, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Permethrin Cream 5%", "batch": "JDO-1186", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 11, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Povidone-Iodine Solution IP 5% w/v (Skydine)", "batch": "PS125258", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 3, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ranitidine Tablets IP 150 mg", "batch": "10402024", "mfg": "2024-09-01", "expiry": "2026-08-01", "qty": 120, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Vitamin A Paediatric Oral Solution IP", "batch": "MH0916", "mfg": "2025-02-01", "expiry": "2027-01-01", "qty": 20, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "WIFS Junior (Ferrous Sulphate & Folic Acid Tablets IP)", "batch": "B250575", "mfg": "2025-04-01", "expiry": "2027-03-01", "qty": 640, "unit": "Unit", "source": "Excel 12-08-2026"}];
 function mergeExcelMedicineStock(){
   if(!Array.isArray(S.med)) S.med=[];
@@ -320,7 +369,7 @@ if(!Array.isArray(S.med)) S.med=[];
 if(!Array.isArray(S.meduse)) S.meduse=[];
 if(!Array.isArray(S.kits)) S.kits=[];
 if(!Array.isArray(S.kituse)) S.kituse=[];
-if(!Array.isArray(S.daily)) S.daily=[]; if(!Array.isArray(S.villages)) S.villages=[]; if(!Array.isArray(S.ri)) S.ri=[]; if(!Array.isArray(S.deliveries)) S.deliveries=[];
+if(!Array.isArray(S.daily)) S.daily=[]; if(!Array.isArray(S.villages)) S.villages=[]; if(!Array.isArray(S.ri)) S.ri=[]; if(!Array.isArray(S.deliveries)) S.deliveries=[]; if(!Array.isArray(S.fpStock)) S.fpStock=[]; if(!Array.isArray(S.fpTx)) S.fpTx=[];
 const seededMedicineCount=mergeExcelMedicineStock();
 localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));
 
@@ -622,6 +671,34 @@ $("kuseform").onsubmit=e=>{
  persist(); alert("Diagnostic usage saved");
 };
 $("actform").onsubmit=e=>{e.preventDefault();S.acts.push({date:$("actdate").value,type:$("acttype").value,count:n("actcount"),place:$("actplace").value,remark:$("actremark").value});persist();alert("Activity saved")};
+
+$("fpStockForm").onsubmit=function(e){
+ e.preventDefault();
+ const name=$("fpName").value.trim(), batch=$("fpBatch").value.trim(), opening=+($("fpOpening").value||0), received=+($("fpReceived").value||0);
+ if(!name||!batch){alert("Item और Batch जरूरी हैं।");return false;}
+ let i=S.fpStock.findIndex(m=>m.name.toLowerCase()===name.toLowerCase()&&m.batch.toLowerCase()===batch.toLowerCase());
+ if(i<0)S.fpStock.push({name,category:$("fpCategory").value,batch,mfg:$("fpMfg").value,expiry:$("fpExp").value,opening,received,unit:$("fpUnit").value||"Piece"});
+ else {let m=S.fpStock[i];m.opening=(+m.opening||0)+opening;m.received=(+m.received||0)+received;m.mfg=$("fpMfg").value||m.mfg;m.expiry=$("fpExp").value||m.expiry;m.unit=$("fpUnit").value||m.unit;m.category=$("fpCategory").value;}
+ persist();this.reset();$("fpOpening").value=0;$("fpReceived").value=0;$("fpUnit").value="Piece";return false;
+};
+$("fptType").onchange=fpToggleRecipient;
+$("fpTxForm").onsubmit=function(e){
+ e.preventDefault(); const i=+$("fptStock").value,q=+($("fptQty").value||0);
+ if(!S.fpStock[i]||q<=0){alert("Item/Batch और quantity चुनें।");return false;}
+ if(q>fpBalance(i)){alert("❌ Available stock: "+fpBalance(i));return false;}
+ if($("fptType").value==="sahiya"&&!$("fptSahiya").value.trim()){alert("Sahiya का नाम भरें।");return false;}
+ S.fpTx.push({date:$("fptDate").value||new Date().toISOString().slice(0,10),type:$("fptType").value,stock:i,qty:q,sahiya:$("fptSahiya").value.trim(),village:$("fptVillage").value.trim(),purpose:$("fptPurpose").value.trim(),remark:$("fptRemark").value.trim()});
+ persist();this.reset();$("fptDate").value=new Date().toISOString().slice(0,10);$("fptType").value="sahiya";fpToggleRecipient();return false;
+};
+$("fpReportMode").onchange=function(){
+ const day=this.value==="day",mon=this.value==="month";
+ $("fpReportDateWrap").style.display=day?"block":"none";$("fpReportMonthWrap").style.display=mon?"block":"none";renderFPReport();
+};
+$("fpGenerateReport").onclick=function(){renderFPReport();};
+$("fpExportReport").onclick=function(){exportFPReportCSV();};
+$("fpReportDate").onchange=renderFPReport;$("fpReportMonth").onchange=renderFPReport;
+$("fpReportSahiya").oninput=renderFPReport;$("fpReportVillage").oninput=renderFPReport;$("fpReportItem").oninput=renderFPReport;
+$("fptDate").value=new Date().toISOString().slice(0,10);$("fpReportDate").value=new Date().toISOString().slice(0,10);$("fpReportMonth").value=new Date().toISOString().slice(0,7);fpToggleRecipient();$("fpReportMode").onchange();
 $("rform").onsubmit=e=>{e.preventDefault();return false};
 function generateReportNow(e){
  if(e){e.preventDefault();e.stopPropagation();}
@@ -915,8 +992,57 @@ $("bulkImport").onclick=()=>{
  bulkRows=[];
 };
 
+
+function fpBalance(i){
+ const m=S.fpStock[i]; if(!m)return 0;
+ const used=S.fpTx.filter(t=>+t.stock===i).reduce((a,t)=>a+(+t.qty||0),0);
+ return Math.max(0,(+m.opening||0)+(+m.received||0)-used);
+}
+function renderFPSupply(){
+ if(!$("fpStockTable"))return;
+ const today=new Date().toISOString().slice(0,10), month=today.slice(0,7);
+ $("fpStockTotal").textContent=S.fpStock.reduce((a,m,i)=>a+fpBalance(i),0);
+ $("fpTodayQty").textContent=S.fpTx.filter(t=>t.date===today).reduce((a,t)=>a+(+t.qty||0),0);
+ $("fpMonthQty").textContent=S.fpTx.filter(t=>String(t.date||"").startsWith(month)).reduce((a,t)=>a+(+t.qty||0),0);
+ $("fpAlerts").textContent=S.fpStock.filter((m,i)=>fpBalance(i)<=10 || (m.expiry && Math.ceil((new Date(m.expiry)-new Date())/86400000)<=60)).length;
+ $("fptStock").innerHTML=S.fpStock.map((m,i)=>`<option value="${i}">${esc(m.name)} — ${esc(m.batch)} — Balance ${fpBalance(i)} ${esc(m.unit||"")}</option>`).join("");
+ table("fpStockTable",["Item","Category","Batch","Mfg","Expiry","Opening","Received","Used","Balance","Unit","Status"],S.fpStock.map((m,i)=>{
+   const used=(+m.opening||0)+(+m.received||0)-fpBalance(i), days=m.expiry?Math.ceil((new Date(m.expiry)-new Date())/86400000):99999;
+   const status=days<0?"🔴 EXPIRED":fpBalance(i)<=10?"🟠 LOW":days<=60?"🟠 EXPIRING":"🟢 OK";
+   return [m.name,m.category,m.batch,m.mfg||"",m.expiry||"",m.opening||0,m.received||0,used,fpBalance(i),m.unit||"",status];
+ }));
+ renderFPReport();
+}
+function fpFilterRows(){
+ const mode=$("fpReportMode").value, d=$("fpReportDate").value, mo=$("fpReportMonth").value;
+ const sh=($("fpReportSahiya").value||"").trim().toLowerCase(), vi=($("fpReportVillage").value||"").trim().toLowerCase(), it=($("fpReportItem").value||"").trim().toLowerCase();
+ return S.fpTx.filter(t=>{
+  if(mode==="day" && (!d||t.date!==d))return false;
+  if(mode==="month" && (!mo||!String(t.date||"").startsWith(mo)))return false;
+  if(sh&&!String(t.sahiya||"").toLowerCase().includes(sh))return false;
+  if(vi&&!String(t.village||"").toLowerCase().includes(vi))return false;
+  const m=S.fpStock[t.stock]||{};
+  if(it&&!String(m.name||"").toLowerCase().includes(it))return false;
+  return true;
+ });
+}
+function renderFPReport(){
+ if(!$("fpReportTable"))return;
+ const rows=fpFilterRows().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+ table("fpReportTable",["Date","Type","Sahiya","Village","Item","Batch","Qty","Unit","Purpose","Remarks"],
+ rows.map(t=>{const m=S.fpStock[t.stock]||{};return[t.date,t.type==="sahiya"?"Sahiya Supply":"Camp Consumption",t.sahiya||"—",t.village||"—",m.name||"",m.batch||"",t.qty||0,m.unit||"",t.purpose||"",t.remark||""]}));
+}
+function exportFPReportCSV(){
+ const rows=fpFilterRows().map(t=>{const m=S.fpStock[t.stock]||{};return[t.date,t.type==="sahiya"?"Sahiya Supply":"Camp Consumption",t.sahiya||"",t.village||"",m.name||"",m.batch||"",t.qty||0,m.unit||"",t.purpose||"",t.remark||""]});
+ downloadText("family_planning_sahiya_supply.csv",csv([["Date","Type","Sahiya","Village","Item","Batch","Qty","Unit","Purpose","Remarks"],...rows]),"text/csv");
+}
+function fpToggleRecipient(){
+ const show=$("fptType").value==="sahiya";
+ $("fpSahiyaWrap").style.display=show?"block":"none"; $("fpVillageWrap").style.display=show?"block":"none";
+}
 function render(){
  try{renderNCD();renderTB()}catch(e){console.error(e)}
+ try{renderFPSupply()}catch(e){console.error("FP supply render:",e)}
  let d=S.daily.find(x=>x.date===today)||{};
  const total=k=>S.daily.reduce((a,x)=>a+(+x[k]||0),0);
  let cards=[["OPD","opd"],["Male","male"],["Female","female"],["NCD","ncd"],["HTN","htn"],["Diabetes","dm"],["TB","tb"],["ANC","anc"],["PNC","pnc"],["HBNC","hbnc"],["Telemedicine","tele"],["Referral","referral"],["Wellness","wellness"],["Camp","camp"],["Field Visit","fieldvisit"],["RI","ri"]];
@@ -1071,7 +1197,7 @@ window.restoreBackupNow=async function restoreBackupNow(e){
 
    if(!x || typeof x!=="object" || Array.isArray(x)) throw new Error("Backup format गलत है");
 
-   const arrayKeys=["daily","patients","anc","med","meduse","kits","kituse","acts","villages","ri","deliveries"];
+   const arrayKeys=["daily","patients","anc","med","meduse","kits","kituse","acts","villages","ri","deliveries","fpStock","fpTx"];
    const present=arrayKeys.filter(k=>Array.isArray(x[k]));
    if(!present.length) throw new Error("HSC Tracker data नहीं मिला");
 

@@ -1,4 +1,4 @@
-const CACHE='hsc-tracker-v19-restore-fixed';
+const CACHE='hsc-tracker-v20-fp-sahiya';
 const AS=['./','./index.html','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
