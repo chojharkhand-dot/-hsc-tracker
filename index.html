@@ -93,12 +93,26 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
   <div class="field full">
    <label>💊 Daily Medicine Consumption — आज कौन-सी medicine कितनी खर्च हुई</label>
    <div class="entryrow">
-    <input id="dailyMedName" placeholder="Medicine name लिखें">
+    <select id="dailyMedSelect"></select>
+    <select id="dailyMedBatch"></select>
     <input type="number" id="dailyMedQty" min="0" placeholder="Qty">
     <button type="button" class="btn small" id="addDailyMed">+</button>
    </div>
-   <div class="muted">एक से अधिक medicines हों तो हर medicine को + से जोड़ें।</div>
+   <div id="dailyMedBalance" class="muted">Medicine चुनें। अगर एक ही batch है तो वही अपने-आप चुना जाएगा; एक से अधिक batch होने पर batch चुनें।</div>
+   <div class="muted">एक से अधिक medicines हों तो हर medicine को + से जोड़ें। Stock में उसी batch से quantity कम होगी।</div>
    <div id="dailyMedList" class="subbox"></div>
+  </div>
+
+  <div class="field full">
+   <label>🧪 Daily Diagnostic Stock Usage — आज kit/test कितना खर्च हुआ</label>
+   <div class="entryrow">
+    <select id="dailyKitSelect"></select>
+    <select id="dailyKitBatch"></select>
+    <input type="number" id="dailyKitQty" min="0" placeholder="Qty">
+    <button type="button" class="btn small" id="addDailyKit">+</button>
+   </div>
+   <div id="dailyKitBalance" class="muted">Diagnostic kit चुनें। Multiple batch होने पर batch चुनें।</div>
+   <div id="dailyKitList" class="subbox"></div>
   </div>
 
   <div class="field full"><label>Remarks</label><textarea id="dremark"></textarea></div><button class="btn full">💾 Save / Update Daily Report</button>
@@ -136,11 +150,11 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
 <section id="medicine" class="view">
  <div class="section"><h2>💊 Medicine Stock</h2><span class="muted">Batch-wise stock, receipt, expiry and daily/monthly consumption</span></div>
  <div class="card"><form id="mform">
-  <div class="field"><label>Medicine Name</label><input id="mname" required></div><div class="field"><label>Batch No.</label><input id="mbatch" required></div><div class="field"><label>Received Date</label><input type="date" id="mrec"></div><div class="field"><label>Expiry Date</label><input type="date" id="mexp" required></div><div class="field"><label>Received Qty</label><input type="number" id="mqty" min="0" required></div><div class="field"><label>Unit</label><select id="munit"><option>Tablet</option><option>Capsule</option><option>Strip</option><option>Bottle</option><option>Vial</option><option>Tube</option><option>Other</option></select></div>
+  <div class="field"><label>Medicine Name</label><input id="mname" required></div><div class="field"><label>Batch No.</label><input id="mbatch" required></div><div class="field"><label>Received Date</label><input type="date" id="mrec"></div><div class="field"><label>Mfg Date</label><input type="date" id="mmfg"></div><div class="field"><label>Expiry Date</label><input type="date" id="mexp" required></div><div class="field"><label>Received Qty</label><input type="number" id="mqty" min="0" required></div><div class="field"><label>Unit</label><select id="munit"><option>Tablet</option><option>Capsule</option><option>Strip</option><option>Bottle</option><option>Vial</option><option>Tube</option><option>Other</option></select></div>
   <button class="btn full">➕ Add Medicine Batch</button>
  </form></div>
  <div class="card" style="margin-top:10px"><form id="museform">
-  <div class="field"><label>Medicine Batch</label><select id="mselect"></select></div><div class="field"><label>Date</label><input type="date" id="musedate"></div><div class="field"><label>Consumed Qty</label><input type="number" id="muse" min="0"></div><div class="field"><label>Reason</label><input id="musereason" placeholder="OPD / Camp / other"></div><button class="btn">💾 Save Consumption</button>
+  <div class="field"><label>Medicine Batch</label><select id="mselect"></select></div><div class="field"><label>Date</label><input type="date" id="musedate"></div><div class="field"><label>Consumed Qty</label><input type="number" id="muse" min="0"></div><div class="field"><label>Reason</label><input id="musereason" placeholder="OPD / Camp / other"></div><button class="btn">💾 Save Consumption</button><div class="muted">यहाँ से भी उसी batch का stock कम होगा। Daily Report से दर्ज consumption अलग से duplicate नहीं होगी।</div>
  </form></div>
  <div class="section"><h2>Current Stock</h2></div><div class="tablewrap"><table class="table" id="medTable"></table></div>
 </section>
@@ -148,7 +162,7 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
 <section id="diagnostic" class="view">
  <div class="section"><h2>🧪 Diagnostic Kit & Test Tracker</h2><span class="muted">Kit stock + test count + result summary</span></div>
  <div class="card"><form id="kform"><div class="field"><label>Test / Kit</label><input id="kname" required></div><div class="field"><label>Batch</label><input id="kbatch" required></div><div class="field"><label>Received Date</label><input type="date" id="krec"></div><div class="field"><label>Expiry</label><input type="date" id="kexp" required></div><div class="field"><label>Quantity</label><input type="number" id="kqty" min="0" required></div><button class="btn full">➕ Add Kit</button></form></div>
- <div class="card" style="margin-top:10px"><form id="kuseform"><div class="field"><label>Test/Kit</label><select id="kselect"></select></div><div class="field"><label>Date</label><input type="date" id="kusedate"></div><div class="field"><label>Tests Used</label><input type="number" id="kuse" min="0"></div><div class="field"><label>Positive</label><input type="number" id="kpositive" min="0"></div><div class="field"><label>Negative</label><input type="number" id="knegative" min="0"></div><button class="btn">💾 Save Test Usage</button></form></div>
+ <div class="card" style="margin-top:10px"><form id="kuseform"><div class="field"><label>Test/Kit Batch</label><select id="kselect"></select></div><div class="field"><label>Date</label><input type="date" id="kusedate"></div><div class="field"><label>Tests Used</label><input type="number" id="kuse" min="0"></div><div class="field"><label>Positive</label><input type="number" id="kpositive" min="0"></div><div class="field"><label>Negative</label><input type="number" id="knegative" min="0"></div><button class="btn">💾 Save Test Usage</button></form></div>
  <div class="section"><h2>Kit Stock</h2></div><div class="tablewrap"><table class="table" id="kitTable"></table></div>
 </section>
 
@@ -197,7 +211,21 @@ $("dashDate").textContent=new Date().toLocaleDateString("hi-IN",{weekday:"long",
 ["dd","pdate","actdate","mrec","musedate","krec","kusedate","rdate"].forEach(id=>$(id).value=today); $("rmonth").value=thisMonth; $("rmode").value="day";
 
 const defaultState={daily:[],patients:[],anc:[],med:[],meduse:[],kits:[],kituse:[],acts:[]};
+const EXCEL_MEDICINE_STOCK=[{"name": "Amoxycillin Oral Suspension IP 125 mg/5 ml (Ceemox)", "batch": "ADBS1058", "mfg": "2025-09-01", "expiry": "2027-02-01", "qty": 17, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Chloroquine Phosphate Oral Suspension IP 50 mg/5 ml", "batch": "L24/0412A", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 29, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Diphenhydramine Hydrochloride, Ammonium Chloride & Sodium Citrate Syrup (Cough Syrup)", "batch": "CEKS24042", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 43, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Oral Suspension IP", "batch": "L24/0407A", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 16, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Mefenamic Acid Oral Suspension", "batch": "JDL-3497", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 33, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin & Metronidazole Suspension (TOFF-M)", "batch": "MLS25283", "mfg": "2025-04-01", "expiry": "2027-03-01", "qty": 4, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Paracetamol Paediatric Suspension IP 125 mg (BIOCETAMOL-125, 60 ml)", "batch": "SPA251556", "mfg": "2025-08-01", "expiry": "2027-07-01", "qty": 80, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Albendazole Tablets IP", "batch": "CQU02ACA", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 76, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Allopurinol Tablets IP 100 mg (CGNOL-100)", "batch": "CT24251163B", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Amlodipine Tablets IP 5 mg", "batch": "SPAC26005", "mfg": "2026-01-01", "expiry": "2027-12-01", "qty": 400, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Amoxycillin Capsules IP 250 mg", "batch": "4172006", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 200, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ampicillin Injection IP 1 g", "batch": "K3190", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 20, "unit": "Vial", "source": "Excel 12-08-2026"}, {"name": "Atenolol Tablets IP 25 mg (Atenopress-25)", "batch": "SPA250926", "mfg": "2025-05-01", "expiry": "2027-04-01", "qty": 42, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Atorvastatin Tablets IP 10 mg", "batch": "15303124", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 100, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Azithromycin Tablets IP 250 mg", "batch": "61501124A", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 192, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Azithromycin Tablets IP 500 mg", "batch": "SPA250563", "mfg": "2025-03-01", "expiry": "2028-02-01", "qty": 133, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Budenase AQ Nasal Spray", "batch": "45A2843", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 5, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cefixime Tablets IP 200 mg", "batch": "14402324", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 90, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cefixime Tablets USP 400 mg", "batch": "T-3287", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 300, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cetirizine Tablets I.P. 10 mg", "batch": "11200924", "mfg": "2024-05-01", "expiry": "2027-04-01", "qty": 80, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cholecalciferol Soft Gelatin Capsules USP (Cartiflex D3)", "batch": "AMS-0202", "mfg": "2025-03-01", "expiry": "2027-02-01", "qty": 39, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ciprofloxacin Hydrochloride Eye Drops IP (Cip Drop)", "batch": "M026C3B", "mfg": "2026-03-01", "expiry": "2028-02-01", "qty": 3, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ciprofloxacin Hydrochloride Tablets I.P. 500 mg", "batch": "CPFT24028", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 300, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Clotrimazole Cream I.P. 1% w/w", "batch": "180-150", "mfg": "2024-09-01", "expiry": "2026-08-01", "qty": 3, "unit": "Tube", "source": "Excel 12-08-2026"}, {"name": "Dexamethasone Sodium Phosphate Injection", "batch": "JDP-1348", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 50, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Diclofenac Sodium and Paracetamol Tablets I.P.", "batch": "11701624", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 24, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Dicyclomine Hydrochloride and Paracetamol Tablets", "batch": "19001424", "mfg": "2024-09-01", "expiry": "2027-08-01", "qty": 200, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Doxycycline Capsules I.P. 100 mg", "batch": "16201824", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 100, "unit": "Capsule", "source": "Excel 12-08-2026"}, {"name": "Erythromycin Stearate Tablets IP 500 mg (ERYCON-500)", "batch": "AGT50354", "mfg": "2025-03-01", "expiry": "2028-02-01", "qty": 500, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Griseofulvin Tablets IP 250 mg", "batch": "T-4624", "mfg": "2025-02-01", "expiry": "2027-01-01", "qty": 20, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen and Paracetamol Tablets IP", "batch": "15602324", "mfg": "2024-07-01", "expiry": "2027-06-01", "qty": 52, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Tablets I.P. 200 mg", "batch": "15300524", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 250, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Tablets I.P. 400 mg", "batch": "15402924", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 108, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Levocetirizine Tablets IP", "batch": "SPA251624", "mfg": "2025-08-01", "expiry": "2027-07-01", "qty": 250, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Metformin Hydrochloride (SR) Tablets IP 1000 mg", "batch": "JDT-8551", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 40, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin and Ornidazole Tablets I.P.", "batch": "16002824", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin and Ornidazole Tablets I.P.", "batch": "16003024", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Omeprazole and Domperidone Capsules IP", "batch": "15901224", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 364, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ondansetron Tablets IP 4 mg", "batch": "18006030022261", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 100, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Oral Rehydration Salts IP (ORS)", "batch": "CHPLO-084", "mfg": "2025-06-01", "expiry": "2027-05-01", "qty": 121, "unit": "Packet", "source": "Excel 12-08-2026"}, {"name": "Paracetamol Tablets IP 650 mg (BIOCETAMOL-650)", "batch": "SPAC25068", "mfg": "2025-09-01", "expiry": "2028-08-01", "qty": 450, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Permethrin Cream 5%", "batch": "JDO-1186", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 11, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Povidone-Iodine Solution IP 5% w/v (Skydine)", "batch": "PS125258", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 3, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ranitidine Tablets IP 150 mg", "batch": "10402024", "mfg": "2024-09-01", "expiry": "2026-08-01", "qty": 120, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Vitamin A Paediatric Oral Solution IP", "batch": "MH0916", "mfg": "2025-02-01", "expiry": "2027-01-01", "qty": 20, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "WIFS Junior (Ferrous Sulphate & Folic Acid Tablets IP)", "batch": "B250575", "mfg": "2025-04-01", "expiry": "2027-03-01", "qty": 640, "unit": "Unit", "source": "Excel 12-08-2026"}];
+function mergeExcelMedicineStock(){
+  if(!Array.isArray(S.med)) S.med=[];
+  let added=0;
+  EXCEL_MEDICINE_STOCK.forEach(m=>{
+    const exists=S.med.some(x=>String(x.name||"").trim().toLowerCase()===String(m.name).trim().toLowerCase() && String(x.batch||"").trim().toLowerCase()===String(m.batch).trim().toLowerCase());
+    if(!exists){S.med.push({...m});added++;}
+  });
+  return added;
+}
+
 let S=JSON.parse(localStorage.getItem("HSC_TRACKER_FINAL")||"null")||defaultState;
+const seededMedicineCount=mergeExcelMedicineStock();
+if(seededMedicineCount>0) localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));
+
 function persist(){localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));render()}
 function go(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
@@ -212,14 +240,18 @@ function go(v){
 function loadDailyDate(){
   const d=S.daily.find(x=>x.date===$("dd").value);
   document.querySelectorAll("#dailyForm input[type=number]").forEach(i=>{if(i.id!=="dailyMedQty" && i.id!=="dailyMedName"){}});
-  if(!d){dailyMedEntries=[]; $("dailyTests").selectedIndex=-1; renderDailyTestQty(); renderDailyMedList(); return;}
+  if(!d){dailyMedEntries=[]; dailyKitEntries=[]; $("dailyTests").selectedIndex=-1; renderDailyTestQty(); renderDailyMedList(); renderDailyKitList(); renderDailyMedicineSelectors(); renderDailyKitSelectors(); return;}
   dailyKeys.forEach(k=>{const id=(k==="ancCount"?"ancCount":k);if($(id))$(id).value=(k==="ancCount"?d.anc:d[k])??0;});
   $("dremark").value=d.remark||"";
   Array.from($("dailyTests").options).forEach(o=>o.selected=(d.testUsage||[]).some(t=>t.test===o.value));
   renderDailyTestQty();
   (d.testUsage||[]).forEach(t=>{const el=document.querySelector(`[data-test-qty="${CSS.escape(t.test)}"]`);if(el)el.value=t.qty});
-  dailyMedEntries=(d.medicineUsage||[]).map(x=>({name:x.name,qty:x.qty}));
+  dailyMedEntries=(d.medicineUsage||[]).map(x=>({med:Number.isInteger(x.med)?x.med:null,name:x.name,batch:x.batch||"",qty:x.qty,unit:x.unit||"Unit"}));
+  dailyKitEntries=(d.kitUsage||[]).map(x=>({kit:Number.isInteger(x.kit)?x.kit:null,name:x.name,batch:x.batch||"",qty:x.qty}));
   renderDailyMedList();
+  renderDailyKitList();
+  renderDailyMedicineSelectors();
+  renderDailyKitSelectors();
 }
 $("dd").onchange=loadDailyDate;
 
@@ -232,24 +264,116 @@ const dailyKeys=["opd","male","female","age05","age618","age1930","age3145","age
 
 const DAILY_TESTS=["Malaria","Typhoid","Dengue","HB","RBS","HIV","Syphilis","Nischay Kit","TB Sputum","Sickle Cell","Water Test","Iodine Salt Test","HBsAg"];
 let dailyMedEntries=[];
+let dailyKitEntries=[];
 
-function selectedDailyTests(){
-  return Array.from($("dailyTests").selectedOptions).map(o=>o.value);
+function medicineBatchesForName(name){
+  return S.med.map((m,i)=>({m,i})).filter(x=>String(x.m.name||"")===String(name||""));
 }
-function renderDailyTestQty(){
-  const selected=selectedDailyTests();
-  const old={};
-  document.querySelectorAll("[data-test-qty]").forEach(i=>old[i.dataset.testQty]=i.value);
-  $("dailyTestQty").innerHTML=selected.length
-    ? selected.map(t=>`<div class="entryrow"><input value="${esc(t)}" readonly><input type="number" min="0" data-test-qty="${esc(t)}" value="${old[t]||0}" placeholder="Qty"><span class="pill">test</span></div>`).join("")
-    : '<span class="muted">अभी कोई test select नहीं किया है।</span>';
+function medicineBalance(i){
+  const m=S.med[i];
+  if(!m) return 0;
+  return (+m.qty||0)-medUsed(i);
+}
+function renderDailyMedicineSelectors(){
+  const names=[...new Set(S.med.map(m=>m.name))].sort((a,b)=>String(a).localeCompare(String(b)));
+  const sel=$("dailyMedSelect");
+  if(!sel)return;
+  const old=sel.value;
+  sel.innerHTML='<option value="">Medicine चुनें</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");
+  if(names.includes(old))sel.value=old;
+  updateDailyMedicineBatches();
+}
+function updateDailyMedicineBatches(){
+  const name=$("dailyMedSelect")?.value;
+  const bsel=$("dailyMedBatch");
+  if(!bsel)return;
+  const batches=medicineBatchesForName(name);
+  bsel.innerHTML=batches.length
+    ? batches.map(x=>`<option value="${x.i}">${esc(x.m.batch)} — Balance: ${medicineBalance(x.i)} ${esc(x.m.unit||"Unit")} — Exp: ${esc(displayMonth(x.m.expiry))}</option>`).join("")
+    : '<option value="">पहले medicine चुनें</option>';
+  const bal=batches.length?medicineBalance(+bsel.value):0;
+  $("dailyMedBalance").textContent=batches.length===1
+    ? `एक ही batch है: ${batches[0].m.batch} • उपलब्ध ${bal} ${batches[0].m.unit||"Unit"}`
+    : batches.length>1 ? `इस medicine के ${batches.length} batches हैं — सही batch चुनें।` : "Medicine चुनें।";
 }
 function renderDailyMedList(){
   $("dailyMedList").innerHTML=dailyMedEntries.length
-    ? dailyMedEntries.map((m,i)=>`<div class="entryrow"><input value="${esc(m.name)}" readonly><input type="number" value="${m.qty}" readonly><button type="button" class="btn small red" onclick="removeDailyMed(${i})">×</button></div>`).join("")
+    ? dailyMedEntries.map((m,i)=>`<div class="entryrow"><input value="${esc(m.name)}" readonly><input value="${esc(m.batch)}" readonly><input type="number" value="${m.qty}" readonly><button type="button" class="btn small red" onclick="removeDailyMed(${i})">×</button></div>`).join("")
     : '<span class="muted">आज की medicine consumption अभी खाली है।</span>';
 }
-function removeDailyMed(i){dailyMedEntries.splice(i,1);renderDailyMedList();}
+function removeDailyMed(i){
+  dailyMedEntries.splice(i,1);
+  renderDailyMedList();
+}
+$("dailyMedSelect").onchange=updateDailyMedicineBatches;
+$("dailyMedBatch").onchange=updateDailyMedicineBatches;
+$("addDailyMed").onclick=()=>{
+  const mi=+$("dailyMedBatch").value;
+  const m=S.med[mi];
+  const qty=+$("dailyMedQty").value||0;
+  if(!m||!$("dailyMedSelect").value||qty<=0){alert("Medicine, batch और सही quantity चुनें");return;}
+  const already=dailyMedEntries.filter(x=>x.med===mi).reduce((a,x)=>a+x.qty,0);
+  const available=medicineBalance(mi)-already;
+  if(qty>available){alert(`इस batch में केवल ${available} ${m.unit||"Unit"} उपलब्ध है।`);return;}
+  dailyMedEntries.push({med:mi,name:m.name,batch:m.batch,qty,unit:m.unit||"Unit"});
+  $("dailyMedQty").value="";
+  renderDailyMedList();
+  updateDailyMedicineBatches();
+};
+
+function kitBatchesForName(name){
+  return S.kits.map((k,i)=>({k,i})).filter(x=>String(x.k.name||"")===String(name||""));
+}
+function kitBalance(i){
+  const k=S.kits[i];
+  if(!k)return 0;
+  return (+k.qty||0)-kitUsed(i);
+}
+function renderDailyKitSelectors(){
+  const names=[...new Set(S.kits.map(k=>k.name))].sort((a,b)=>String(a).localeCompare(String(b)));
+  const sel=$("dailyKitSelect");
+  if(!sel)return;
+  const old=sel.value;
+  sel.innerHTML='<option value="">Diagnostic kit/test चुनें</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");
+  if(names.includes(old))sel.value=old;
+  updateDailyKitBatches();
+}
+function updateDailyKitBatches(){
+  const name=$("dailyKitSelect")?.value, bsel=$("dailyKitBatch");
+  if(!bsel)return;
+  const batches=kitBatchesForName(name);
+  bsel.innerHTML=batches.length
+    ? batches.map(x=>`<option value="${x.i}">${esc(x.k.batch)} — Balance: ${kitBalance(x.i)} — Exp: ${esc(displayMonth(x.k.expiry))}</option>`).join("")
+    : '<option value="">पहले diagnostic kit चुनें</option>';
+  $("dailyKitBalance").textContent=batches.length===1
+    ? `एक ही batch है: ${batches[0].k.batch} • उपलब्ध ${kitBalance(batches[0].i)}`
+    : batches.length>1 ? `इस kit/test के ${batches.length} batches हैं — सही batch चुनें।` : "Diagnostic kit चुनें।";
+}
+function renderDailyKitList(){
+  $("dailyKitList").innerHTML=dailyKitEntries.length
+    ? dailyKitEntries.map((k,i)=>`<div class="entryrow"><input value="${esc(k.name)}" readonly><input value="${esc(k.batch)}" readonly><input type="number" value="${k.qty}" readonly><button type="button" class="btn small red" onclick="removeDailyKit(${i})">×</button></div>`).join("")
+    : '<span class="muted">आज की diagnostic stock usage अभी खाली है।</span>';
+}
+function removeDailyKit(i){dailyKitEntries.splice(i,1);renderDailyKitList();}
+$("dailyKitSelect").onchange=updateDailyKitBatches;
+$("dailyKitBatch").onchange=updateDailyKitBatches;
+$("addDailyKit").onclick=()=>{
+  const ki=+$("dailyKitBatch").value, k=S.kits[ki], qty=+$("dailyKitQty").value||0;
+  if(!k||qty<=0){alert("Diagnostic kit, batch और सही quantity चुनें");return;}
+  const already=dailyKitEntries.filter(x=>x.kit===ki).reduce((a,x)=>a+x.qty,0);
+  const available=kitBalance(ki)-already;
+  if(qty>available){alert(`इस batch में केवल ${available} उपलब्ध है।`);return;}
+  dailyKitEntries.push({kit:ki,name:k.name,batch:k.batch,qty});
+  $("dailyKitQty").value="";
+  renderDailyKitList(); updateDailyKitBatches();
+};
+
+function displayMonth(v){
+  if(!v)return "";
+  const d=new Date(v+"T00:00:00");
+  return isNaN(d)?String(v):String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear();
+}
+
 $("dailyTests").onchange=renderDailyTestQty;
 $("addDailyMed").onclick=()=>{
   const name=$("dailyMedName").value.trim(), qty=+$("dailyMedQty").value||0;
@@ -267,7 +391,13 @@ $("dailyForm").onsubmit=e=>{
  dailyKeys.forEach(k=>o[k]=(k==="ancCount"?n("ancCount"):n(k)));
  o.anc=o.ancCount; delete o.ancCount;
  o.testUsage=selectedDailyTests().map(t=>({test:t,qty:+(document.querySelector(`[data-test-qty="${CSS.escape(t)}"]`)?.value||0)})).filter(x=>x.qty>0);
- o.medicineUsage=dailyMedEntries.map(x=>({name:x.name,qty:x.qty}));
+ // Remove previous stock-linked consumption for this date before rebuilding it.
+ S.meduse=S.meduse.filter(x=>!(x.source==="daily" && x.date===o.date));
+ S.kituse=S.kituse.filter(x=>!(x.source==="daily" && x.date===o.date));
+ o.medicineUsage=dailyMedEntries.map(x=>({med:x.med,name:x.name,batch:x.batch,qty:x.qty,unit:x.unit||"Unit"}));
+ o.kitUsage=dailyKitEntries.map(x=>({kit:x.kit,name:x.name,batch:x.batch,qty:x.qty}));
+ dailyMedEntries.forEach(x=>S.meduse.push({med:x.med,date:o.date,qty:x.qty,reason:"Daily Report",source:"daily"}));
+ dailyKitEntries.forEach(x=>S.kituse.push({kit:x.kit,date:o.date,qty:x.qty,positive:0,negative:0,source:"daily"}));
  let idx=S.daily.findIndex(x=>x.date===o.date);
  if(idx>=0)S.daily[idx]=o;else S.daily.push(o);
  persist();
@@ -280,10 +410,48 @@ function calcEDD(){if(!$("lmp").value){$("edd").value="";$("aeddmonth").value=""
 $("lmp").oninput=calcEDD;
 $("aform").onsubmit=e=>{e.preventDefault();calcEDD();S.anc.push({name:$("aname").value,village:$("avillage").value,age:n("aage"),mobile:$("amobile").value,lmp:$("lmp").value,edd:$("edd").value,stage:$("astage").value,hrp:$("ahrp").value,reason:$("areason").value,last:$("alast").value,next:$("anext").value,blood:$("ablood").value,td:$("atd").value,ifa:$("aifa").value,calcium:$("acalcium").value,remark:$("aremark").value});persist();e.target.reset();alert("ANC record saved")};
 
-$("mform").onsubmit=e=>{e.preventDefault();S.med.push({name:$("mname").value,batch:$("mbatch").value,received:$("mrec").value,expiry:$("mexp").value,qty:n("mqty"),unit:$("munit").value});persist();e.target.reset();alert("Medicine batch added")};
-$("museform").onsubmit=e=>{e.preventDefault();S.meduse.push({med:+$("mselect").value,date:$("musedate").value,qty:n("muse"),reason:$("musereason").value});persist();alert("Medicine consumption saved")};
-$("kform").onsubmit=e=>{e.preventDefault();S.kits.push({name:$("kname").value,batch:$("kbatch").value,received:$("krec").value,expiry:$("kexp").value,qty:n("kqty")});persist();e.target.reset();alert("Diagnostic kit added")};
-$("kuseform").onsubmit=e=>{e.preventDefault();S.kituse.push({kit:+$("kselect").value,date:$("kusedate").value,qty:n("kuse"),positive:n("kpositive"),negative:n("knegative")});persist();alert("Diagnostic usage saved")};
+$("mform").onsubmit=e=>{
+ e.preventDefault();
+ const name=$("mname").value.trim(),batch=$("mbatch").value.trim(),qty=n("mqty");
+ if(!name||!batch||qty<=0){alert("Medicine name, batch और quantity भरें");return;}
+ const exists=S.med.find(x=>String(x.name).trim().toLowerCase()===name.toLowerCase()&&String(x.batch).trim().toLowerCase()===batch.toLowerCase());
+ if(exists){
+   if(!confirm("यह batch पहले से मौजूद है। क्या नई received quantity इसी batch में जोड़नी है?"))return;
+   exists.qty=(+exists.qty||0)+qty;
+   exists.received=$("mrec").value||exists.received;
+   exists.mfg=$("mmfg").value||exists.mfg;
+   exists.expiry=$("mexp").value||exists.expiry;
+   exists.unit=$("munit").value||exists.unit;
+ }else{
+   S.med.push({name,batch,received:$("mrec").value,mfg:$("mmfg").value,expiry:$("mexp").value,qty,unit:$("munit").value});
+ }
+ persist(); e.target.reset(); $("mrec").value=today; $("mmfg").value=""; alert("Medicine batch added / stock updated");
+};
+$("museform").onsubmit=e=>{
+ e.preventDefault();
+ const mi=+$("mselect").value, qty=n("muse"), available=medicineBalance(mi);
+ if(!S.med[mi]||qty<=0){alert("Medicine batch और quantity भरें");return;}
+ if(qty>available){alert(`इस batch में केवल ${available} ${S.med[mi].unit||"Unit"} उपलब्ध है।`);return;}
+ S.meduse.push({med:mi,date:$("musedate").value,qty,reason:$("musereason").value,source:"manual"});
+ persist(); alert("Medicine consumption saved");
+};
+$("kform").onsubmit=e=>{
+ e.preventDefault();
+ const name=$("kname").value.trim(),batch=$("kbatch").value.trim(),qty=n("kqty");
+ if(!name||!batch||qty<=0){alert("Test/Kit name, batch और quantity भरें");return;}
+ const exists=S.kits.find(x=>String(x.name).trim().toLowerCase()===name.toLowerCase()&&String(x.batch).trim().toLowerCase()===batch.toLowerCase());
+ if(exists){if(!confirm("यह batch पहले से मौजूद है। क्या quantity जोड़नी है?"))return; exists.qty=(+exists.qty||0)+qty; exists.received=$("krec").value||exists.received; exists.expiry=$("kexp").value||exists.expiry;}
+ else S.kits.push({name,batch,received:$("krec").value,expiry:$("kexp").value,qty});
+ persist(); e.target.reset(); $("krec").value=today; alert("Diagnostic kit batch added / stock updated");
+};
+$("kuseform").onsubmit=e=>{
+ e.preventDefault();
+ const ki=+$("kselect").value, qty=n("kuse"), available=kitBalance(ki);
+ if(!S.kits[ki]||qty<=0){alert("Test/Kit batch और quantity भरें");return;}
+ if(qty>available){alert(`इस batch में केवल ${available} उपलब्ध है।`);return;}
+ S.kituse.push({kit:ki,date:$("kusedate").value,qty,positive:n("kpositive"),negative:n("knegative"),source:"manual"});
+ persist(); alert("Diagnostic usage saved");
+};
 $("actform").onsubmit=e=>{e.preventDefault();S.acts.push({date:$("actdate").value,type:$("acttype").value,count:n("actcount"),place:$("actplace").value,remark:$("actremark").value});persist();alert("Activity saved")};
 $("rform").onsubmit=e=>{e.preventDefault();renderReports()};
 $("psearch").oninput=renderPatient; $("asearch").oninput=renderANC;
@@ -354,9 +522,11 @@ function render(){
  table("todayTable",["Indicator","Value"],[["OPD",d.opd],["Male",d.male],["Female",d.female],["0–5",d.age05],["6–18",d.age618],["NCD",d.ncd],["HTN",d.htn],["Diabetes",d.dm],["TB",d.tb],["ANC",d.anc],["Telemedicine",d.tele],["Camp",d.camp],["Field Visit",d.fieldvisit],["Tests",(d.testUsage||[]).map(t=>`${esc(t.test)}: ${t.qty}`).join("<br>")],["Medicine Used",(d.medicineUsage||[]).map(m=>`${esc(m.name)}: ${m.qty}`).join("<br>")]]);
  table("dailyTable",["Date","OPD","Male","Female","0–5","6–18","19–30","31–45","46–59","60+","NCD","HTN","DM","TB","ANC","Tele","Camp","Field","Tests","Medicine Used"],S.daily.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,60).map(x=>[x.date,x.opd,x.male,x.female,x.age05,x.age618,x.age1930,x.age3145,x.age4659,x.age60,x.ncd,x.htn,x.dm,x.tb,x.anc,x.tele,x.camp,x.fieldvisit,(x.testUsage||[]).map(t=>`${esc(t.test)}: ${t.qty}`).join("<br>"),(x.medicineUsage||[]).map(m=>`${esc(m.name)}: ${m.qty}`).join("<br>")]));
  renderPatient();renderANC();
- $("mselect").innerHTML=S.med.map((m,i)=>`<option value="${i}">${esc(m.name)} — ${esc(m.batch)}</option>`).join("");
- table("medTable",["Medicine","Batch","Expiry","Received","Used","Balance","Unit","Status"],S.med.map((m,i)=>{let u=medUsed(i),b=m.qty-u;return[m.name,m.batch,m.expiry,m.qty,u,b,b<=20?'<span class="tag red">Low</span>':'<span class="tag">OK</span>',m.unit]}));
- $("kselect").innerHTML=S.kits.map((k,i)=>`<option value="${i}">${esc(k.name)} — ${esc(k.batch)}</option>`).join("");
+ $("mselect").innerHTML=S.med.map((m,i)=>`<option value="${i}">${esc(m.name)} — Batch ${esc(m.batch)} — Balance ${medicineBalance(i)}</option>`).join("");
+ table("medTable",["Medicine","Batch","Mfg","Expiry","Opening/Received","Used","Balance","Unit","Status"],S.med.map((m,i)=>{let u=medUsed(i),b=(+m.qty||0)-u;return[m.name,m.batch,displayMonth(m.mfg),displayMonth(m.expiry),m.qty,u,b,m.unit||"Unit",b<=20?'<span class="tag red">Low</span>':'<span class="tag">OK</span>']}));
+ renderDailyMedicineSelectors();
+ renderDailyKitSelectors();
+ $("kselect").innerHTML=S.kits.map((k,i)=>`<option value="${i}">${esc(k.name)} — Batch ${esc(k.batch)} — Balance ${kitBalance(i)}</option>`).join("");
  table("kitTable",["Test/Kit","Batch","Expiry","Qty","Used","Balance","Status"],S.kits.map((k,i)=>{let u=kitUsed(i),b=k.qty-u;return[k.name,k.batch,k.expiry,k.qty,u,b,b<=10?'<span class="tag red">Low</span>':'<span class="tag">OK</span>']}));
  table("actTable",["Date","Activity","Count","Place","Remarks"],S.acts.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,80).map(x=>[x.date,x.type,x.count,x.place,x.remark]));
  renderReports();
