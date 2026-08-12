@@ -286,7 +286,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
  <div class="section"><h2>⚙️ Backup & Settings</h2><span class="muted">आपके data की सुरक्षा के लिए</span></div>
  <div class="grid">
   <div class="card"><h3>💾 Backup</h3><p class="muted">पूरा data एक JSON file में export करें।</p><button class="btn" onclick="backup()">Download Backup</button></div>
-  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" onchange="handleRestoreFile(this)"><button type="button" class="btn secondary" id="restoreBtn" style="margin-top:10px;display:none;pointer-events:auto">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
+  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" onchange="handleRestoreFile(this)"><button type="button" class="btn secondary" id="restoreBtn" onclick="return restoreBackupNow();" style="margin-top:10px;display:none;pointer-events:auto">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
   <div class="card"><h3>📊 CSV Export</h3><p class="muted">Daily, ANC, medicine, diagnostic और activity data अलग-अलग CSV में निकालें।</p><button class="btn" onclick="exportCSV()">Export CSV ZIP</button></div>
   <div class="card"><h3>🧹 Reset</h3><p class="muted danger">सारा local data हट जाएगा।</p><button class="btn red" onclick="resetData()">Reset All Data</button></div>
  </div>
@@ -301,7 +301,7 @@ const $=id=>document.getElementById(id);
 const today=new Date().toISOString().slice(0,10), thisMonth=today.slice(0,7);
 $("clock").textContent=new Date().toLocaleDateString("hi-IN",{day:"2-digit",month:"short",year:"numeric"});
 $("dashDate").textContent=new Date().toLocaleDateString("hi-IN",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
-["dd","pdate","actdate","mrec","musedate","krec","kusedate","rdate"].forEach(id=>$(id).value=today); $("rmonth").value=thisMonth; $("rmode").value="day";
+["dd","pdate","actdate","mrec","musedate","krec","kusedate"].forEach(id=>$(id).value=today); $("rmonth").value=""; $("rdate").value=""; $("rmode").value="all";
 
 const defaultState={daily:[],patients:[],anc:[],med:[],meduse:[],kits:[],kituse:[],acts:[],villages:[],ri:[],deliveries:[]};
 const EXCEL_MEDICINE_STOCK=[{"name": "Amoxycillin Oral Suspension IP 125 mg/5 ml (Ceemox)", "batch": "ADBS1058", "mfg": "2025-09-01", "expiry": "2027-02-01", "qty": 17, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Chloroquine Phosphate Oral Suspension IP 50 mg/5 ml", "batch": "L24/0412A", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 29, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Diphenhydramine Hydrochloride, Ammonium Chloride & Sodium Citrate Syrup (Cough Syrup)", "batch": "CEKS24042", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 43, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Oral Suspension IP", "batch": "L24/0407A", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 16, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Mefenamic Acid Oral Suspension", "batch": "JDL-3497", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 33, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin & Metronidazole Suspension (TOFF-M)", "batch": "MLS25283", "mfg": "2025-04-01", "expiry": "2027-03-01", "qty": 4, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Paracetamol Paediatric Suspension IP 125 mg (BIOCETAMOL-125, 60 ml)", "batch": "SPA251556", "mfg": "2025-08-01", "expiry": "2027-07-01", "qty": 80, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Albendazole Tablets IP", "batch": "CQU02ACA", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 76, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Allopurinol Tablets IP 100 mg (CGNOL-100)", "batch": "CT24251163B", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Amlodipine Tablets IP 5 mg", "batch": "SPAC26005", "mfg": "2026-01-01", "expiry": "2027-12-01", "qty": 400, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Amoxycillin Capsules IP 250 mg", "batch": "4172006", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 200, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ampicillin Injection IP 1 g", "batch": "K3190", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 20, "unit": "Vial", "source": "Excel 12-08-2026"}, {"name": "Atenolol Tablets IP 25 mg (Atenopress-25)", "batch": "SPA250926", "mfg": "2025-05-01", "expiry": "2027-04-01", "qty": 42, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Atorvastatin Tablets IP 10 mg", "batch": "15303124", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 100, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Azithromycin Tablets IP 250 mg", "batch": "61501124A", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 192, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Azithromycin Tablets IP 500 mg", "batch": "SPA250563", "mfg": "2025-03-01", "expiry": "2028-02-01", "qty": 133, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Budenase AQ Nasal Spray", "batch": "45A2843", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 5, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cefixime Tablets IP 200 mg", "batch": "14402324", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 90, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cefixime Tablets USP 400 mg", "batch": "T-3287", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 300, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cetirizine Tablets I.P. 10 mg", "batch": "11200924", "mfg": "2024-05-01", "expiry": "2027-04-01", "qty": 80, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cholecalciferol Soft Gelatin Capsules USP (Cartiflex D3)", "batch": "AMS-0202", "mfg": "2025-03-01", "expiry": "2027-02-01", "qty": 39, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ciprofloxacin Hydrochloride Eye Drops IP (Cip Drop)", "batch": "M026C3B", "mfg": "2026-03-01", "expiry": "2028-02-01", "qty": 3, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ciprofloxacin Hydrochloride Tablets I.P. 500 mg", "batch": "CPFT24028", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 300, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Clotrimazole Cream I.P. 1% w/w", "batch": "180-150", "mfg": "2024-09-01", "expiry": "2026-08-01", "qty": 3, "unit": "Tube", "source": "Excel 12-08-2026"}, {"name": "Dexamethasone Sodium Phosphate Injection", "batch": "JDP-1348", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 50, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Diclofenac Sodium and Paracetamol Tablets I.P.", "batch": "11701624", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 24, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Dicyclomine Hydrochloride and Paracetamol Tablets", "batch": "19001424", "mfg": "2024-09-01", "expiry": "2027-08-01", "qty": 200, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Doxycycline Capsules I.P. 100 mg", "batch": "16201824", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 100, "unit": "Capsule", "source": "Excel 12-08-2026"}, {"name": "Erythromycin Stearate Tablets IP 500 mg (ERYCON-500)", "batch": "AGT50354", "mfg": "2025-03-01", "expiry": "2028-02-01", "qty": 500, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Griseofulvin Tablets IP 250 mg", "batch": "T-4624", "mfg": "2025-02-01", "expiry": "2027-01-01", "qty": 20, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen and Paracetamol Tablets IP", "batch": "15602324", "mfg": "2024-07-01", "expiry": "2027-06-01", "qty": 52, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Tablets I.P. 200 mg", "batch": "15300524", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 250, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Tablets I.P. 400 mg", "batch": "15402924", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 108, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Levocetirizine Tablets IP", "batch": "SPA251624", "mfg": "2025-08-01", "expiry": "2027-07-01", "qty": 250, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Metformin Hydrochloride (SR) Tablets IP 1000 mg", "batch": "JDT-8551", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 40, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin and Ornidazole Tablets I.P.", "batch": "16002824", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin and Ornidazole Tablets I.P.", "batch": "16003024", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Omeprazole and Domperidone Capsules IP", "batch": "15901224", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 364, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ondansetron Tablets IP 4 mg", "batch": "18006030022261", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 100, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Oral Rehydration Salts IP (ORS)", "batch": "CHPLO-084", "mfg": "2025-06-01", "expiry": "2027-05-01", "qty": 121, "unit": "Packet", "source": "Excel 12-08-2026"}, {"name": "Paracetamol Tablets IP 650 mg (BIOCETAMOL-650)", "batch": "SPAC25068", "mfg": "2025-09-01", "expiry": "2028-08-01", "qty": 450, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Permethrin Cream 5%", "batch": "JDO-1186", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 11, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Povidone-Iodine Solution IP 5% w/v (Skydine)", "batch": "PS125258", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 3, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ranitidine Tablets IP 150 mg", "batch": "10402024", "mfg": "2024-09-01", "expiry": "2026-08-01", "qty": 120, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Vitamin A Paediatric Oral Solution IP", "batch": "MH0916", "mfg": "2025-02-01", "expiry": "2027-01-01", "qty": 20, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "WIFS Junior (Ferrous Sulphate & Folic Acid Tablets IP)", "batch": "B250575", "mfg": "2025-04-01", "expiry": "2027-03-01", "qty": 640, "unit": "Unit", "source": "Excel 12-08-2026"}];
@@ -624,12 +624,24 @@ $("kuseform").onsubmit=e=>{
 $("actform").onsubmit=e=>{e.preventDefault();S.acts.push({date:$("actdate").value,type:$("acttype").value,count:n("actcount"),place:$("actplace").value,remark:$("actremark").value});persist();alert("Activity saved")};
 $("rform").onsubmit=e=>{e.preventDefault();return false};
 function generateReportNow(e){
- if(e){e.preventDefault();e.stopImmediatePropagation();}
+ if(e){e.preventDefault();e.stopPropagation();}
  try{
+   const mode=$("rmode").value||"all";
+   if(mode==="day" && !$("rdate").value){
+     alert("Day-wise report के लिए पहले calendar से तारीख चुनें।");
+     $("rdate").focus(); return false;
+   }
+   if(mode==="month" && !$("rmonth").value){
+     alert("Month-wise report के लिए पहले Month और Year चुनें।");
+     $("rmonth").focus(); return false;
+   }
    renderReports();
    const el=$("summary");
    if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
- }catch(err){console.error("Report generate error",err);alert("Report generate नहीं हो सका: "+(err.message||err));}
+ }catch(err){
+   console.error("Report generate error",err);
+   alert("Report generate नहीं हो सका: "+(err.message||err));
+ }
  return false;
 }
 $("generateReportBtn").onclick=generateReportNow;
@@ -664,12 +676,12 @@ function updateReportIndicators(){
  $("rindicator").innerHTML=list.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");
 }
 function updateReportModeUI(){
- const mode=$("rmode").value||"day";
+ const mode=$("rmode").value||"all";
  const mw=$("rmonthWrap"), dw=$("rdateWrap"), mi=$("rmonth"), di=$("rdate");
  if(mw) mw.style.display=mode==="month"?"flex":"none";
  if(dw) dw.style.display=mode==="day"?"flex":"none";
- if(mode==="month" && mi && !mi.value) mi.value=thisMonth;
- if(mode==="day" && di && !di.value) di.value=today;
+ if(mode!=="month" && mi) mi.value="";
+ if(mode!=="day" && di) di.value="";
 }
 $("rprogram").onchange=updateReportIndicators;
 $("rmode").onchange=updateReportModeUI;
@@ -677,13 +689,22 @@ updateReportIndicators();
 updateReportModeUI();
 
 function getReportData(){
- let mode=$("rmode").value||"day", mo=$("rmonth").value||thisMonth, specific=$("rdate").value||today;
- return {mode,mo,specific,village:$("rvillage").value.trim().toLowerCase(),tola:$("rtola").value.trim().toLowerCase(),program:$("rprogram").value,indicator:$("rindicator").value};
+ const mode=$("rmode").value||"all";
+ const mo=$("rmonth").value||"";
+ const specific=$("rdate").value||"";
+ return {mode,mo,specific,
+   village:$("rvillage").value.trim().toLowerCase(),
+   tola:$("rtola").value.trim().toLowerCase(),
+   program:$("rprogram").value,
+   indicator:$("rindicator").value};
 }
 function inRange(date,mode,specific,mo){
- if(!date)return mode==="all";
+ if(mode==="all")return true;
+ if(!date)return false;
  const d=String(date).slice(0,10);
- return mode==="all" || (mode==="day"&&d===specific) || (mode==="month"&&d.startsWith(mo));
+ if(mode==="day")return !!specific && d===specific;
+ if(mode==="month")return !!mo && d.startsWith(mo);
+ return false;
 }
 function reportDailyRows(cfg){
  return S.daily.filter(x=>inRange(x.date,cfg.mode,cfg.specific,cfg.mo));
@@ -770,26 +791,43 @@ $("exportReportCsv").onclick=()=>{
 };
 let reportPrintOldTitle="";
 function openReportPrintView(e){
- if(e){e.preventDefault();e.stopImmediatePropagation();}
+ if(e){e.preventDefault();e.stopPropagation();}
  try{
    renderReports();
    const pa=$("printArea");
    if(!pa || !pa.innerHTML.trim()){alert("पहले Generate Report करें।");return false;}
-   reportPrintOldTitle=document.title;
-   document.title="HSC Tracker Report";
-   document.body.classList.add("report-print-mode");
-   // IMPORTANT: iPhone/Safari can block window.print() if it is called from setTimeout.
-   // Call it directly inside the user click event.
-   window.print();
+   const reportHTML=pa.innerHTML;
+   const w=window.open("","_blank");
+   if(!w){
+     alert("Print window खुल नहीं पाई। Safari में pop-up/नई window की अनुमति दें और फिर दोबारा दबाएँ।");
+     return false;
+   }
+   const printDoc=`<!doctype html><html lang="hi"><head><meta charset="utf-8">
+   <meta name="viewport" content="width=device-width,initial-scale=1">
+   <title>HSC Tracker Report</title>
+   <style>
+   @page{size:A4 portrait;margin:12mm}
+   *{box-sizing:border-box}body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111;background:#fff;margin:0;padding:14px}
+   h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:18px 0 7px;border-bottom:1px solid #ddd;padding-bottom:4px}
+   .printmeta{font-size:11px;color:#555;margin-bottom:10px}.printgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+   .printcard{border:1px solid #ccc;border-radius:6px;padding:7px}.printcard .label{font-size:9px;color:#666}.printcard .num{font-size:17px;font-weight:800}
+   table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:10px}th,td{border:1px solid #ccc;padding:4px;text-align:left;vertical-align:top}th{background:#f3f4f6}
+   .print-actions{position:sticky;top:0;background:#fff;padding:8px 0 12px;border-bottom:1px solid #ddd;margin-bottom:12px}
+   .print-actions button{font-size:16px;font-weight:700;padding:11px 16px;border:0;border-radius:8px;margin-right:8px}
+   @media print{.print-actions{display:none!important}body{padding:0}}
+   </style></head><body>
+   <div class="print-actions"><button onclick="window.print()">🖨️ Print / Save PDF</button><button onclick="window.close()">✕ Close</button></div>
+   ${reportHTML}
+   </body></html>`;
+   w.document.open(); w.document.write(printDoc); w.document.close();
+   w.onload=function(){try{setTimeout(function(){w.print()},250)}catch(_){}};
+   return false;
  }catch(err){
    console.error("Report print error",err);
-   document.body.classList.remove("report-print-mode");
-   document.title=reportPrintOldTitle||document.title;
    alert("Print / Save PDF नहीं खुल सका: "+(err.message||err));
+   return false;
  }
- return false;
 }
-window.addEventListener("afterprint",()=>{document.body.classList.remove("report-print-mode");if(reportPrintOldTitle)document.title=reportPrintOldTitle;});
 $("printReportBtn").onclick=openReportPrintView;
 
 function dateDiff(a,b){return Math.floor((new Date(a)-new Date(b))/86400000)}
@@ -956,20 +994,18 @@ window.restoreBackupNow=async function restoreBackupNow(){
    S=base;
    mergeExcelMedicineStock();
    persist();
-   render();
+   try{render();}catch(renderErr){console.error("Render after restore:",renderErr);}
    restoreStatus("✅ <b>Backup successfully restored.</b><br>आपका पुराना data वापस आ गया है।",true);
    restoreSelectedFile=null;
    if(input) input.value="";
-   if(btn){btn.textContent="✅ OK — Restore Backup";btn.disabled=true;}
+   if(btn){btn.textContent="✅ Backup Restored ✓";btn.disabled=true;btn.style.display="block";}
+   alert("✅ Backup successfully restored. आपका पुराना data वापस आ गया है।");
  }catch(err){
    console.error("Restore error",err);
    restoreStatus("❌ <b>Backup restore नहीं हुआ.</b><br>"+esc(err.message||"कृपया HSC Tracker की JSON backup file चुनें।"),false);
    if(btn){btn.textContent="✅ OK — Restore Backup";btn.disabled=false;}
  }
 }
-// Extra explicit listener: keeps Restore reliable on iPhone Safari/iOS webview.
-const restoreBtnEl=$("restoreBtn");
-if(restoreBtnEl){restoreBtnEl.addEventListener("click",function(e){e.preventDefault();e.stopImmediatePropagation();restoreBackupNow();},{passive:false});}
 function csv(rows){return rows.map(r=>r.map(x=>`"${String(x??"").replaceAll('"','""')}"`).join(",")).join("\n")}
 function downloadText(name,text,type="text/csv"){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+text],{type}));a.download=name;a.click()}
 function exportCSV(){downloadText("daily.csv",csv([Object.keys(S.daily[0]||{date:"date"}),...S.daily.map(x=>Object.values(x))]));setTimeout(()=>downloadText("anc.csv",csv([Object.keys(S.anc[0]||{name:"name"}),...S.anc.map(x=>Object.values(x))])),200);setTimeout(()=>downloadText("medicine.csv",csv([["Medicine","Batch","Expiry","Qty","Used","Balance"],...S.med.map((m,i)=>[m.name,m.batch,m.expiry,m.qty,medUsed(i),m.qty-medUsed(i)])])),400);setTimeout(()=>downloadText("diagnostic.csv",csv([["Test","Batch","Expiry","Qty","Used","Balance"],...S.kits.map((k,i)=>[k.name,k.batch,k.expiry,k.qty,kitUsed(i),k.qty-kitUsed(i)])])),600)}
