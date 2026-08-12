@@ -286,7 +286,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
  <div class="section"><h2>⚙️ Backup & Settings</h2><span class="muted">आपके data की सुरक्षा के लिए</span></div>
  <div class="grid">
   <div class="card"><h3>💾 Backup</h3><p class="muted">पूरा data एक JSON file में export करें।</p><button class="btn" onclick="backup()">Download Backup</button></div>
-  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" style="display:block;width:100%;margin-top:8px"><button type="button" class="btn secondary" id="restoreBtn" disabled onclick="return window.restoreBackupNow(event)" style="margin-top:10px;display:inline-block;pointer-events:auto;touch-action:manipulation;opacity:.55">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
+  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" onchange="handleRestoreFile(this)" style="display:block;width:100%;margin-top:8px"><button type="button" class="btn secondary" id="restoreBtn" onclick="return window.restoreBackupNow(event)" style="margin-top:10px;display:inline-block;pointer-events:auto;touch-action:manipulation;opacity:.55">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
   <div class="card"><h3>📊 CSV Export</h3><p class="muted">Daily, ANC, medicine, diagnostic और activity data अलग-अलग CSV में निकालें।</p><button class="btn" onclick="exportCSV()">Export CSV ZIP</button></div>
   <div class="card"><h3>🧹 Reset</h3><p class="muted danger">सारा local data हट जाएगा।</p><button class="btn red" onclick="resetData()">Reset All Data</button></div>
  </div>
@@ -1030,6 +1030,13 @@ function handleRestoreFile(input){
  }
 }
 window.handleRestoreFile=handleRestoreFile;
+document.addEventListener("DOMContentLoaded",()=>{
+ const rf=$("restoreFile");
+ if(rf){
+   rf.addEventListener("change",()=>handleRestoreFile(rf));
+   rf.addEventListener("input",()=>handleRestoreFile(rf));
+ }
+});
 
 window.restoreBackupNow=async function restoreBackupNow(e){
  if(e){e.preventDefault();e.stopPropagation();}
