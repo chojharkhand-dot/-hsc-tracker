@@ -1,4 +1,4 @@
-const CACHE='hsc-tracker-v9-print';
+const CACHE='hsc-tracker-v10-restore-print';
 const AS=['./','./index.html','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
