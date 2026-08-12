@@ -223,8 +223,13 @@ function mergeExcelMedicineStock(){
 }
 
 let S=JSON.parse(localStorage.getItem("HSC_TRACKER_FINAL")||"null")||defaultState;
+if(!Array.isArray(S.med)) S.med=[];
+if(!Array.isArray(S.meduse)) S.meduse=[];
+if(!Array.isArray(S.kits)) S.kits=[];
+if(!Array.isArray(S.kituse)) S.kituse=[];
+if(!Array.isArray(S.daily)) S.daily=[];
 const seededMedicineCount=mergeExcelMedicineStock();
-if(seededMedicineCount>0) localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));
+localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));
 
 function persist(){localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));render()}
 function go(v){
