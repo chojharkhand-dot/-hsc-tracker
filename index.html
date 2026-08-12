@@ -274,7 +274,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
   <div class="field full">
    <label>Sub-Tola / Tola</label>
    <div id="vTolaRows"></div>
-   <button type="button" class="btn secondary full" id="addTolaBtn" style="margin-top:8px;position:relative;z-index:9999;pointer-events:auto;touch-action:manipulation">➕ Add Tola</button>
+   <button type="button" class="btn secondary full" id="addTolaBtn" style="margin-top:8px">➕ Add Tola</button>
    <div id="tolaTotalNote" class="muted" style="margin-top:8px">हर Tola का नाम और उसकी Population अलग-अलग भरें।</div>
   </div>
   <button class="btn full">💾 Save Village</button>
@@ -393,6 +393,24 @@ function go(v){
   if(v==="ri"){try{renderRI()}catch(err){console.error("RI render error:",err)}}
 }
 
+function selectedDailyTests(){
+  const el=$("dailyTests");
+  return el ? Array.from(el.selectedOptions).map(o=>o.value) : [];
+}
+function renderDailyTestQty(){
+  const box=$("dailyTestQty");
+  if(!box) return;
+  const selected=selectedDailyTests();
+  if(!selected.length){
+    box.innerHTML='<span class="muted">कोई test select नहीं किया गया है।</span>';
+    return;
+  }
+  box.innerHTML=selected.map((t,i)=>`<div class="entryrow" style="margin-bottom:8px">
+    <input value="${esc(t)}" readonly aria-label="Selected test ${i+1}">
+    <input type="number" min="0" step="1" data-test-qty="${esc(t)}" placeholder="Quantity">
+  </div>`).join('');
+}
+
 function loadDailyDate(){
   const d=S.daily.find(x=>x.date===$("dd").value);
   document.querySelectorAll("#dailyForm input[type=number]").forEach(i=>{if(i.id!=="dailyMedQty" && i.id!=="dailyMedName"){}});
@@ -464,38 +482,18 @@ function removeDailyMed(i){
 $("dailyMedSelect").onchange=updateDailyMedicineBatches;
 $("dailyMedBatch").onchange=updateDailyMedicineBatches;
 $("addDailyMed").onclick=()=>{
-  const name=$("dailyMedName").value.trim();
-  const qty=+$("dailyMedQty").value||0;
-  if(!name||qty<=0){alert("Medicine name और सही quantity भरें");return;}
-
-  // Match the medicine to stock batches.
-  const matches=(S.medicines||[]).filter(m=>String(m.name||"").trim().toLowerCase()===name.toLowerCase());
-  let batch="";
-  if(matches.length===1){
-    batch=matches[0].batch||"";
-  }else if(matches.length>1){
-    batch=prompt("इस medicine के कई batch हैं। Batch No. डालें:", "")||"";
-    if(!batch){return;}
-    const found=matches.find(m=>String(m.batch||"").toLowerCase()===batch.toLowerCase());
-    if(!found){alert("यह batch नहीं मिला। पहले Medicine Stock में नया batch जोड़ें।");return;}
-  }else{
-    alert("यह medicine stock में नहीं मिली। पहले Medicine Stock में medicine/batch जोड़ें।");
-    return;
-  }
-
-  const stock=(S.medicines||[]).find(m=>
-    String(m.name||"").trim().toLowerCase()===name.toLowerCase() &&
-    String(m.batch||"").trim().toLowerCase()===String(batch).trim().toLowerCase()
-  );
-  if(!stock){alert("Selected medicine/batch stock में नहीं मिला।");return;}
-  const available=+(stock.qty||0);
-  if(qty>available){alert(`इस batch में केवल ${available} quantity उपलब्ध है।`);return;}
-
-  // Prevent double deduction if the same draft row is re-rendered.
-  dailyMedEntries.push({name,qty,batch});
-  $("dailyMedName").value="";
+  const name=$("dailyMedSelect")?.value||"";
+  const mi=parseInt($("dailyMedBatch")?.value,10);
+  const qty=+$("dailyMedQty")?.value||0;
+  const m=Number.isInteger(mi)?S.med[mi]:null;
+  if(!m||!name||qty<=0){alert("Medicine, batch और सही quantity चुनें");return;}
+  const already=dailyMedEntries.filter(x=>x.med===mi).reduce((a,x)=>a+(+x.qty||0),0);
+  const available=medicineBalance(mi)-already;
+  if(qty>available){alert(`इस batch में केवल ${available} ${m.unit||"Unit"} उपलब्ध है।`);return;}
+  dailyMedEntries.push({med:mi,name:m.name,batch:m.batch||"",qty,unit:m.unit||"Unit"});
   $("dailyMedQty").value="";
   renderDailyMedList();
+  updateDailyMedicineBatches();
 };
 
 function kitBatchesForName(name){
@@ -545,53 +543,6 @@ $("addDailyKit").onclick=()=>{
   renderDailyKitList(); updateDailyKitBatches();
 };
 
-
-function selectedDailyTests(){
-  const el=$("dailyTests");
-  if(!el) return [];
-  return Array.from(el.selectedOptions||[]).map(o=>o.value);
-}
-
-function renderDailyTestQty(){
-  const box=$("dailyTestQty");
-  const sel=$("dailyTests");
-  if(!box || !sel) return;
-  const selected=Array.from(sel.selectedOptions||[]).map(o=>o.value);
-  const old={};
-  box.querySelectorAll("[data-test-qty]").forEach(i=>{
-    old[i.getAttribute("data-test-qty")]=i.value;
-  });
-  box.innerHTML="";
-  selected.forEach(test=>{
-    const row=document.createElement("div");
-    row.className="subrow";
-    row.style.display="grid";
-    row.style.gridTemplateColumns="minmax(0,1fr) 120px";
-    row.style.gap="10px";
-    row.style.alignItems="center";
-    row.style.marginBottom="8px";
-
-    const label=document.createElement("label");
-    label.textContent=test;
-    label.style.margin="0";
-    label.style.fontWeight="700";
-
-    const input=document.createElement("input");
-    input.type="number";
-    input.min="0";
-    input.step="1";
-    input.inputMode="numeric";
-    input.placeholder="Qty";
-    input.setAttribute("data-test-qty",test);
-    input.value=old[test] ?? "";
-    input.setAttribute("aria-label",test+" quantity");
-
-    row.appendChild(label);
-    row.appendChild(input);
-    box.appendChild(row);
-  });
-}
-
 function displayMonth(v){
   if(!v)return "";
   const d=new Date(v+"T00:00:00");
@@ -599,40 +550,7 @@ function displayMonth(v){
 }
 
 $("dailyTests").onchange=renderDailyTestQty;
-$("addDailyMed").onclick=()=>{
-  const name=$("dailyMedName").value.trim();
-  const qty=+$("dailyMedQty").value||0;
-  if(!name||qty<=0){alert("Medicine name और सही quantity भरें");return;}
 
-  // Match the medicine to stock batches.
-  const matches=(S.medicines||[]).filter(m=>String(m.name||"").trim().toLowerCase()===name.toLowerCase());
-  let batch="";
-  if(matches.length===1){
-    batch=matches[0].batch||"";
-  }else if(matches.length>1){
-    batch=prompt("इस medicine के कई batch हैं। Batch No. डालें:", "")||"";
-    if(!batch){return;}
-    const found=matches.find(m=>String(m.batch||"").toLowerCase()===batch.toLowerCase());
-    if(!found){alert("यह batch नहीं मिला। पहले Medicine Stock में नया batch जोड़ें।");return;}
-  }else{
-    alert("यह medicine stock में नहीं मिली। पहले Medicine Stock में medicine/batch जोड़ें।");
-    return;
-  }
-
-  const stock=(S.medicines||[]).find(m=>
-    String(m.name||"").trim().toLowerCase()===name.toLowerCase() &&
-    String(m.batch||"").trim().toLowerCase()===String(batch).trim().toLowerCase()
-  );
-  if(!stock){alert("Selected medicine/batch stock में नहीं मिला।");return;}
-  const available=+(stock.qty||0);
-  if(qty>available){alert(`इस batch में केवल ${available} quantity उपलब्ध है।`);return;}
-
-  // Prevent double deduction if the same draft row is re-rendered.
-  dailyMedEntries.push({name,qty,batch});
-  $("dailyMedName").value="";
-  $("dailyMedQty").value="";
-  renderDailyMedList();
-};
 renderDailyTestQty(); renderDailyMedList();
 
 
@@ -654,7 +572,7 @@ $("dailyForm").onsubmit=e=>{
   const oldRec=S.daily[idx];
   // Restore previous consumption before applying the edited record.
   (oldRec.medicineUsage||[]).forEach(m=>{
-    const st=(S.medicines||[]).find(s=>String(s.name||"").trim().toLowerCase()===String(m.name||"").trim().toLowerCase() &&
+    const st=(S.med||[]).find(s=>String(s.name||"").trim().toLowerCase()===String(m.name||"").trim().toLowerCase() &&
       String(s.batch||"").trim().toLowerCase()===String(m.batch||"").trim().toLowerCase());
     if(st) st.qty=(+st.qty||0)+(+m.qty||0);
   });
@@ -662,7 +580,7 @@ $("dailyForm").onsubmit=e=>{
 }else S.daily.push(o);
 
 (o.medicineUsage||[]).forEach(m=>{
-  const st=(S.medicines||[]).find(s=>String(s.name||"").trim().toLowerCase()===String(m.name||"").trim().toLowerCase() &&
+  const st=(S.med||[]).find(s=>String(s.name||"").trim().toLowerCase()===String(m.name||"").trim().toLowerCase() &&
     String(s.batch||"").trim().toLowerCase()===String(m.batch||"").trim().toLowerCase());
   if(st) st.qty=Math.max(0,(+st.qty||0)-(+m.qty||0));
 });
@@ -979,19 +897,12 @@ function villageTolaData(){
  })).filter(x=>x.name);
 }
 function addTolaRow(name="",population=""){
- const wrap=document.getElementById("vTolaRows");
- if(!wrap)return false;
- const row=document.createElement("div");
- row.className="tola-row";
- row.style.cssText="display:grid;grid-template-columns:minmax(0,1fr) 120px 44px;gap:8px;margin:8px 0;align-items:center";
- row.innerHTML=`<input class="tola-name" placeholder="Tola का नाम"><input class="tola-pop" type="number" min="0" placeholder="Population"><button type="button" class="btn danger remove-tola" title="Remove">✕</button>`;
- row.querySelector(".tola-name").value=name||"";
- row.querySelector(".tola-pop").value=population||"";
- row.querySelector(".remove-tola").onclick=function(){row.remove();updateTolaTotal()};
+ const wrap=$("vTolaRows"); if(!wrap)return;
+ const row=document.createElement("div"); row.className="tola-row"; row.style.cssText="display:grid;grid-template-columns:minmax(0,1fr) 120px 44px;gap:8px;margin:8px 0;align-items:center";
+ row.innerHTML=`<input class="tola-name" placeholder="Tola का नाम" value="${esc(name)}"><input class="tola-pop" type="number" min="0" placeholder="Population" value="${population}"><button type="button" class="btn danger remove-tola" title="Remove">✕</button>`;
+ row.querySelector(".remove-tola").onclick=()=>{row.remove();updateTolaTotal()};
  row.querySelector(".tola-pop").oninput=updateTolaTotal;
- wrap.appendChild(row);
- updateTolaTotal();
- return false;
+ wrap.appendChild(row); updateTolaTotal();
 }
 function updateTolaTotal(){
  const total=villageTolaData().reduce((a,x)=>a+(+x.population||0),0), pop=+$("vpop").value||0;
@@ -1355,13 +1266,6 @@ function downloadText(name,text,type="text/csv"){let a=document.createElement("a
 function exportCSV(){downloadText("daily.csv",csv([Object.keys(S.daily[0]||{date:"date"}),...S.daily.map(x=>Object.values(x))]));setTimeout(()=>downloadText("anc.csv",csv([Object.keys(S.anc[0]||{name:"name"}),...S.anc.map(x=>Object.values(x))])),200);setTimeout(()=>downloadText("medicine.csv",csv([["Medicine","Batch","Expiry","Qty","Used","Balance"],...S.med.map((m,i)=>[m.name,m.batch,m.expiry,m.qty,medUsed(i),m.qty-medUsed(i)])])),400);setTimeout(()=>downloadText("diagnostic.csv",csv([["Test","Batch","Expiry","Qty","Used","Balance"],...S.kits.map((k,i)=>[k.name,k.batch,k.expiry,k.qty,kitUsed(i),k.qty-kitUsed(i)])])),600)}
 function resetData(){if(confirm("सारा data delete करना है?")){S=JSON.parse(JSON.stringify(defaultState));persist();alert("Data reset")}}
 render();
-(function(){
- const b=document.getElementById("addTolaBtn");
- if(b){
-   b.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();addTolaRow();},true);
-   b.addEventListener("touchend",function(e){e.preventDefault();e.stopPropagation();addTolaRow();},true);
- }
-})();
 loadDailyDate();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
