@@ -28,7 +28,23 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
 .searchbar{display:flex;gap:8px;flex-wrap:wrap}.searchbar input{max-width:260px}.empty{padding:25px;text-align:center;color:var(--muted)}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.quick{grid-template-columns:repeat(3,1fr)}form{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:540px){header{position:relative}main{padding:11px}.grid{gap:7px}.quick{grid-template-columns:repeat(2,1fr)}form{grid-template-columns:1fr}.full{grid-column:auto}.title{font-size:18px}}
-@media print{header,nav,.no-print{display:none!important}body{background:#fff}.view{display:none!important}.view.active{display:block}.card,.tablewrap{box-shadow:none}}
+#printArea{display:none}
+@media print{
+  @page{size:A4 portrait;margin:12mm}
+  body{background:#fff!important;color:#111}
+  body>*{display:none!important}
+  #printArea{display:block!important;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  #printArea h1{font-size:20px;margin:0 0 4px}
+  #printArea h2{font-size:15px;margin:18px 0 7px;border-bottom:1px solid #ddd;padding-bottom:4px}
+  #printArea .printmeta{font-size:11px;color:#555;margin-bottom:10px}
+  #printArea .printgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+  #printArea .printcard{border:1px solid #ccc;border-radius:6px;padding:7px}
+  #printArea .printcard .label{font-size:9px;color:#666}
+  #printArea .printcard .num{font-size:17px;font-weight:800}
+  #printArea table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:10px}
+  #printArea th,#printArea td{border:1px solid #ccc;padding:4px;text-align:left;vertical-align:top}
+  #printArea th{background:#f3f4f6}
+}
 </style>
 </head>
 <body>
@@ -41,8 +57,10 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
 <main>
 
 <section id="dashboard" class="view active">
- <div class="section"><h2>आज का Dashboard</h2><span class="muted" id="dashDate"></span></div>
+ <div class="section"><h2>📊 Dashboard — कुल संचयी रिपोर्ट</h2><span class="muted" id="dashDate"></span></div>
  <div class="grid" id="kpis"></div>
+ <div class="section"><h2>📅 आज की रिपोर्ट</h2><span class="muted">आज के saved data का snapshot</span></div>
+ <div class="grid" id="todayKpis"></div>
  <div class="section"><h2>Quick Entry</h2></div>
  <div class="quick">
   <button onclick="go('daily')"><b>📝</b>Daily Report</button><button onclick="go('patient')"><b>👥</b>Patient/OPD</button><button onclick="go('anc')"><b>🤰</b>ANC / HRP</button><button onclick="go('medicine')"><b>💊</b>Medicine</button><button onclick="go('diagnostic')"><b>🧪</b>Diagnostic</button><button onclick="go('activity')"><b>📋</b>Activities</button>
@@ -141,8 +159,15 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
 </section>
 
 <section id="report" class="view">
- <div class="section"><h2>📊 Reports</h2><span class="muted">Day-wise / Month-wise / Village-wise</span></div>
- <div class="card"><form id="rform"><div class="field"><label>Month</label><input type="month" id="rmonth"></div><div class="field"><label>Specific Date (optional)</label><input type="date" id="rdate"></div><div class="field"><label>Village (ANC)</label><input id="rvillage"></div><button class="btn">🔎 Generate</button><button type="button" class="btn secondary" onclick="window.print()">🖨️ Print / Save PDF</button></form></div>
+ <div class="section"><h2>📊 Reports</h2><span class="muted">Day-wise / Month-wise / All-time / Village-wise</span></div>
+ <div class="card"><form id="rform">
+  <div class="field"><label>Report Type</label><select id="rmode"><option value="day">📅 Day-wise</option><option value="month">🗓️ Month-wise</option><option value="all">📈 All-time Total</option></select></div>
+  <div class="field"><label>Month</label><input type="month" id="rmonth"></div>
+  <div class="field"><label>Date (Day-wise)</label><input type="date" id="rdate"></div>
+  <div class="field"><label>Village (ANC)</label><input id="rvillage" placeholder="Optional"></div>
+  <button class="btn">🔎 Generate Report</button>
+  <button type="button" class="btn secondary" id="printReportBtn">🖨️ Print / Save PDF</button>
+ </form></div>
  <div class="section"><h2>Summary</h2></div><div class="grid" id="summary"></div>
  <div class="section"><h2>Age-wise OPD</h2></div><div class="tablewrap"><table class="table" id="ageTable"></table></div>
  <div class="section"><h2>Medicine Consumption</h2></div><div class="tablewrap"><table class="table" id="medReport"></table></div>
@@ -162,13 +187,14 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
  <div class="notice" style="margin-top:12px"><b>महत्वपूर्ण:</b> यह final offline-first web-app prototype है। Data इस browser/device में रहता है। अलग-अलग mobile/laptop में automatic sync के लिए secure cloud backend और HTTPS hosting जोड़ना अगला deployment step होगा।</div>
 </section>
 </main>
+<div id="printArea"></div>
 
 <script>
 const $=id=>document.getElementById(id);
 const today=new Date().toISOString().slice(0,10), thisMonth=today.slice(0,7);
 $("clock").textContent=new Date().toLocaleDateString("hi-IN",{day:"2-digit",month:"short",year:"numeric"});
 $("dashDate").textContent=new Date().toLocaleDateString("hi-IN",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
-["dd","pdate","actdate","mrec","musedate","krec","kusedate","rdate"].forEach(id=>$(id).value=today); $("rmonth").value=thisMonth;
+["dd","pdate","actdate","mrec","musedate","krec","kusedate","rdate"].forEach(id=>$(id).value=today); $("rmonth").value=thisMonth; $("rmode").value="day";
 
 const defaultState={daily:[],patients:[],anc:[],med:[],meduse:[],kits:[],kituse:[],acts:[]};
 let S=JSON.parse(localStorage.getItem("HSC_TRACKER_FINAL")||"null")||defaultState;
@@ -268,29 +294,58 @@ function kitUsed(i,from="",to=""){return S.kituse.filter(x=>x.kit===i&&(!from||x
 function renderPatient(){let q=($("psearch").value||"").toLowerCase();let a=S.patients.filter(x=>[x.name,x.village,x.condition,x.mobile].join(" ").toLowerCase().includes(q));table("patientTable",["Date","Name","Village","Age","Sex","Complaint","BP","RBS","Condition","NCD FU","Next FU","Abha"],a.slice().reverse().map(x=>[x.date,x.name,x.village,x.age,x.sex,x.complaint,x.bp,x.rbs,x.condition,x.ncd,x.next,x.abha]))}
 function renderANC(){let q=($("asearch").value||"").toLowerCase();let a=S.anc.filter(x=>[x.name,x.village].join(" ").toLowerCase().includes(q));table("ancTable",["Name","Village","Age","LMP","EDD","Visit","HRP","Reason","Next Visit","Blood","IFA","Calcium"],a.slice().reverse().map(x=>[x.name,x.village,x.age,x.lmp,x.edd,x.stage,x.hrp==="Yes"?'<span class="tag red">HRP</span>':"No",x.reason,x.next,x.blood,x.ifa,x.calcium]))}
 
-function renderReports(){
- let mo=$("rmonth").value||thisMonth, specific=$("rdate").value||"", village=($("rvillage").value||"").toLowerCase();
- let ds=S.daily.filter(x=>specific?x.date===specific:x.date.startsWith(mo)), from=specific||mo+"-01", to=specific||mo+"-31";
- let sum=k=>ds.reduce((a,x)=>a+(+x[k]||0),0);
-
-let dailyTestTotals={};
-ds.forEach(x=>(x.testUsage||[]).forEach(t=>dailyTestTotals[t.test]=(dailyTestTotals[t.test]||0)+(+t.qty||0)));
-let dailyMedTotals={};
-ds.forEach(x=>(x.medicineUsage||[]).forEach(m=>dailyMedTotals[m.name]=(dailyMedTotals[m.name]||0)+(+m.qty||0)));
-
- const cards=[["OPD","opd"],["Male","male"],["Female","female"],["Children 0–5","age05"],["NCD","ncd"],["HTN","htn"],["Diabetes","dm"],["TB","tb"],["ANC","anc"],["PNC","pnc"],["HBNC","hbnc"],["Telemedicine","tele"],["Wellness","wellness"],["Camp","camp"],["Field Visit","fieldvisit"],["RI","ri"]];
- $("summary").innerHTML=cards.map(a=>`<div class="card stat"><div class="muted">${a[0]}</div><div class="num">${sum(a[1])}</div></div>`).join("");
- let ages=[["0–5","age05"],["6–18","age618"],["19–30","age1930"],["31–45","age3145"],["46–59","age4659"],["60+","age60"]];table("ageTable",["Age Group","Count"],ages.map(a=>[a[0],sum(a[1])]));
- table("medReport",["Medicine","Batch","Consumption"],S.med.map((m,i)=>[m.name,m.batch,medUsed(i,from,to)]));
- table("kitReport",["Test/Kit","Batch","Tests","Positive","Negative"],S.kits.map((k,i)=>{let u=S.kituse.filter(x=>x.kit===i&&x.date>=from&&x.date<=to);return[k.name,k.batch,u.reduce((a,x)=>a+x.qty,0),u.reduce((a,x)=>a+x.positive,0),u.reduce((a,x)=>a+x.negative,0)]}));
- let aa=S.anc.filter(x=>(!village||x.village.toLowerCase().includes(village))&&((x.edd||"").startsWith(mo)||x.lmp.startsWith(mo)));let stages=["ANC 1","ANC 2","ANC 3","ANC 4"].map(s=>[s,aa.filter(x=>x.stage===s).length]);table("ancReport",["Indicator","Count"],[...stages,["HRP",aa.filter(x=>x.hrp==="Yes").length],["EDD in selected month",aa.filter(x=>(x.edd||"").startsWith(mo)).length]]);
- let ac=S.acts.filter(x=>x.date>=from&&x.date<=to);table("activityReport",["Activity","Count"],[...new Set(S.acts.map(x=>x.type))].map(t=>[t,ac.filter(x=>x.type===t).reduce((a,x)=>a+x.count,0)]));
+function getReportData(){
+ let mode=$("rmode").value||"day";
+ let mo=$("rmonth").value||thisMonth;
+ let specific=$("rdate").value||today;
+ let village=($("rvillage").value||"").trim().toLowerCase();
+ let ds=[];
+ if(mode==="day") ds=S.daily.filter(x=>x.date===specific);
+ else if(mode==="month") ds=S.daily.filter(x=>x.date.startsWith(mo));
+ else ds=S.daily.slice();
+ let from=mode==="day"?specific:(mode==="month"?mo+"-01":"");
+ let to=mode==="day"?specific:(mode==="month"?mo+"-31":"");
+ return {mode,mo,specific,village,ds,from,to};
 }
+
+function renderReports(){
+ const {mode,mo,specific,village,ds,from,to}=getReportData();
+ const sum=k=>ds.reduce((a,x)=>a+(+x[k]||0),0);
+ const modeLabel=mode==="day"?`Day-wise: ${specific}`:mode==="month"?`Month-wise: ${mo}`:"All-time cumulative";
+ let dailyTestTotals={};
+ ds.forEach(x=>(x.testUsage||[]).forEach(t=>dailyTestTotals[t.test]=(dailyTestTotals[t.test]||0)+(+t.qty||0)));
+ let dailyMedTotals={};
+ ds.forEach(x=>(x.medicineUsage||[]).forEach(m=>dailyMedTotals[m.name]=(dailyMedTotals[m.name]||0)+(+m.qty||0)));
+ const cards=[["OPD","opd"],["Male","male"],["Female","female"],["Children 0–5","age05"],["6–18","age618"],["NCD","ncd"],["HTN","htn"],["Diabetes","dm"],["TB","tb"],["ANC","anc"],["PNC","pnc"],["HBNC","hbnc"],["Telemedicine","tele"],["Referral","referral"],["Wellness","wellness"],["Camp","camp"],["Field Visit","fieldvisit"],["Meeting","meeting"],["RI","ri"],["Leave","leave"]];
+ $("summary").innerHTML=`<div class="card full" style="grid-column:1/-1"><b>${modeLabel}</b><div class="muted">${ds.length} daily report(s) included</div></div>`+cards.map(a=>`<div class="card stat"><div class="muted">${a[0]}</div><div class="num">${sum(a[1])}</div></div>`).join("");
+ let ages=[["0–5","age05"],["6–18","age618"],["19–30","age1930"],["31–45","age3145"],["46–59","age4659"],["60+","age60"]];
+ table("ageTable",["Age Group","Count"],ages.map(a=>[a[0],sum(a[1])]));
+ const medRows=Object.entries(dailyMedTotals).map(([name,qty])=>[name,"Daily report",qty]);
+ const registeredMed=S.med.map((m,i)=>[m.name,m.batch,medUsed(i,from,to)]);
+ table("medReport",["Medicine","Batch/Source","Consumption"],medRows.length?medRows:registeredMed);
+ table("kitReport",["Test/Kit","Batch","Tests","Positive","Negative"],S.kits.map((k,i)=>{let u=S.kituse.filter(x=>x.kit===i&&(!from||x.date>=from)&&(!to||x.date<=to));return[k.name,k.batch,u.reduce((a,x)=>a+x.qty,0),u.reduce((a,x)=>a+x.positive,0),u.reduce((a,x)=>a+x.negative,0)]}).concat(Object.entries(dailyTestTotals).map(([name,qty])=>[name,"Daily report",qty,"-","-"])));
+ let aa=S.anc.filter(x=>(!village||String(x.village||"").toLowerCase().includes(village))&&((mode==="all")||((x.edd||"").startsWith(mo)||String(x.lmp||"").startsWith(mo))));
+ if(mode==="day") aa=S.anc.filter(x=>(!village||String(x.village||"").toLowerCase().includes(village))&&(x.date===specific||x.next===specific));
+ let stages=["ANC 1","ANC 2","ANC 3","ANC 4"].map(s=>[s,aa.filter(x=>x.stage===s).length]);
+ table("ancReport",["Indicator","Count"],[...stages,["HRP",aa.filter(x=>x.hrp==="Yes").length],["EDD in selected period",aa.filter(x=>mode==="all"||String(x.edd||"").startsWith(mo)).length]]);
+ let ac=S.acts.filter(x=>!from|| (x.date>=from&&x.date<=to));
+ table("activityReport",["Activity","Count"],[...new Set(S.acts.map(x=>x.type))].map(t=>[t,ac.filter(x=>x.type===t).reduce((a,x)=>a+x.count,0)]));
+ renderPrintArea(modeLabel,ds,cards,sum);
+}
+
+function renderPrintArea(modeLabel,ds,cards,sum){
+ const section=(title,id)=>`<h2>${title}</h2>${$(id).outerHTML}`;
+ $("printArea").innerHTML=`<h1>🏥 HSC Tracker — Report</h1><div class="printmeta">${modeLabel} • Generated: ${new Date().toLocaleString("en-IN")}</div><div class="printgrid">${cards.map(a=>`<div class="printcard"><div class="label">${a[0]}</div><div class="num">${sum(a[1])}</div></div>`).join("")}</div>${section("Age-wise OPD","ageTable")}${section("Medicine Consumption","medReport")}${section("Diagnostic Usage","kitReport")}${section("ANC / EDD / HRP","ancReport")}${section("Activities","activityReport")}`;
+}
+
+$("printReportBtn").onclick=()=>{renderReports();setTimeout(()=>window.print(),50)};
 
 function render(){
  let d=S.daily.find(x=>x.date===today)||{};
- let cards=[["OPD","opd"],["ANC","anc"],["NCD","ncd"],["TB","tb"],["Telemedicine","tele"],["Wellness","wellness"],["Camp","camp"],["HBNC","hbnc"],["Referral","referral"],["RI","ri"]];
- $("kpis").innerHTML=cards.map(a=>`<div class="card stat"><div class="muted">${a[0]}</div><div class="num">${d[a[1]]||0}</div><span class="tag">आज</span></div>`).join("");
+ const total=k=>S.daily.reduce((a,x)=>a+(+x[k]||0),0);
+ let cards=[["OPD","opd"],["Male","male"],["Female","female"],["NCD","ncd"],["HTN","htn"],["Diabetes","dm"],["TB","tb"],["ANC","anc"],["PNC","pnc"],["HBNC","hbnc"],["Telemedicine","tele"],["Referral","referral"],["Wellness","wellness"],["Camp","camp"],["Field Visit","fieldvisit"],["RI","ri"]];
+ $("kpis").innerHTML=cards.map(a=>`<div class="card stat"><div class="muted">${a[0]}</div><div class="num">${total(a[1])}</div><span class="tag">कुल</span></div>`).join("");
+ $("todayKpis").innerHTML=cards.slice(0,10).map(a=>`<div class="card stat"><div class="muted">${a[0]}</div><div class="num">${d[a[1]]||0}</div><span class="tag">आज</span></div>`).join("");
  let alerts=[];
  S.med.forEach((m,i)=>{let b=m.qty-medUsed(i);if(b<=20)alerts.push(`<div class="card"><b>💊 ${esc(m.name)}</b><div class="muted">Batch ${esc(m.batch)} • Balance ${b}</div><span class="tag red">Low Stock</span></div>`);if(m.expiry&&m.expiry<=new Date(Date.now()+45*86400000).toISOString().slice(0,10))alerts.push(`<div class="card"><b>⚠️ ${esc(m.name)}</b><div class="muted">Expiry ${m.expiry}</div><span class="tag amber">Near Expiry</span></div>`)});
  S.kits.forEach((k,i)=>{let b=k.qty-kitUsed(i);if(b<=10)alerts.push(`<div class="card"><b>🧪 ${esc(k.name)}</b><div class="muted">Balance ${b}</div><span class="tag red">Low Stock</span></div>`)});
