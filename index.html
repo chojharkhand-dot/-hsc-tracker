@@ -223,7 +223,7 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
  <div class="tablewrap"><table class="table" id="villageTable"></table></div>
 </section>
 
-<section id="ri" class="view">
+<section id="riPage" class="view">
  <div class="section"><h2>💉 RI Schedule</h2><span class="muted">Village-wise recurring session + today's alert</span></div>
  <div class="card"><form id="riform">
   <div class="field"><label>Village</label><input id="rivillage" required></div><div class="field"><label>AWC / Session Site</label><input id="riawc"></div><div class="field"><label>Week</label><select id="riweek"><option>1st</option><option>2nd</option><option>3rd</option><option>4th</option><option>Last</option></select></div><div class="field"><label>Day</label><select id="riday"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option></select></div>
@@ -233,7 +233,7 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
  <div class="tablewrap"><table class="table" id="riTable"></table></div>
 </section>
 
-<section id="ncd" class="view">
+<section id="ncdPage" class="view">
 <div class="section"><h2>❤️ NCD Follow-up</h2><span class="muted">HTN / Diabetes treatment, values and follow-up</span></div>
 <div class="card"><form id="ncdForm">
 <div class="field"><label>Patient Name</label><input id="nname" required></div><div class="field"><label>Age</label><input type="number" id="nage"></div>
@@ -245,7 +245,7 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
 <div class="field full"><label>Remarks / Risk</label><textarea id="nremark"></textarea></div><button class="btn full">💾 Save NCD Follow-up</button>
 </form></div><div class="section"><h2>NCD Patient History</h2></div><div class="tablewrap"><table class="table" id="ncdTable"></table></div></section>
 
-<section id="tb" class="view">
+<section id="tbPage" class="view">
 <div class="section"><h2>🫁 TB Patient Tracking</h2><span class="muted">Treatment, regimen, follow-up and expected completion</span></div>
 <div class="card"><form id="tbForm">
 <div class="field"><label>Patient Name</label><input id="tbname" required></div><div class="field"><label>Age</label><input type="number" id="tbage"></div><div class="field"><label>Sex</label><select id="tbsex"><option>Female</option><option>Male</option><option>Other</option></select></div><div class="field"><label>Village</label><input id="tbvillage"></div>
@@ -322,7 +322,8 @@ localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));
 function persist(){localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));render()}
 function go(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
-  const target=$(v);
+  const pageMap={ncd:"ncdPage",tb:"tbPage",ri:"riPage"};
+  const target=$(pageMap[v]||v);
   if(!target)return;
   target.classList.add("active");
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.v===v));
@@ -726,9 +727,9 @@ $("exportReportCsv").onclick=()=>{
  map.forEach(([n,k])=>rows.push([n,sumDaily(ds,k)]));
  const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
  const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
- const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="HSC_Report.csv";a.click();URL.revokeObjectURL(a.href);
+ const a=document.createElement("a");const url=URL.createObjectURL(blob);a.href=url;a.download="HSC_Report.csv";a.style.display="none";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},1000);
 };
-$("printReportBtn").onclick=()=>{renderReports();setTimeout(()=>window.print(),50)};
+$("printReportBtn").onclick=(e)=>{e.preventDefault();try{renderReports();window.print()}catch(err){console.error(err);alert("Report print तैयार नहीं हो सका: "+err.message)}};
 
 
 function dateDiff(a,b){return Math.floor((new Date(a)-new Date(b))/86400000)}

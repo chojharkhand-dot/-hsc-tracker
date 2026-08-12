@@ -1,4 +1,4 @@
-const CACHE='hsc-tracker-v7';
+const CACHE='hsc-tracker-v8';
 const AS=['./','./index.html','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
