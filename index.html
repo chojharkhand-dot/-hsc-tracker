@@ -286,7 +286,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
  <div class="section"><h2>⚙️ Backup & Settings</h2><span class="muted">आपके data की सुरक्षा के लिए</span></div>
  <div class="grid">
   <div class="card"><h3>💾 Backup</h3><p class="muted">पूरा data एक JSON file में export करें।</p><button class="btn" onclick="backup()">Download Backup</button></div>
-  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" style="display:block;width:100%;margin-top:8px"><button type="button" class="btn secondary" id="restoreBtn" disabled onclick="return window.restoreBackupNow(event)" style="margin-top:10px;display:inline-block;pointer-events:auto;touch-action:manipulation">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
+  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" style="display:block;width:100%;margin-top:8px"><button type="button" class="btn secondary" id="restoreBtn" disabled onclick="return window.restoreBackupNow(event)" style="margin-top:10px;display:inline-block;pointer-events:auto;touch-action:manipulation;opacity:.55">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
   <div class="card"><h3>📊 CSV Export</h3><p class="muted">Daily, ANC, medicine, diagnostic और activity data अलग-अलग CSV में निकालें।</p><button class="btn" onclick="exportCSV()">Export CSV ZIP</button></div>
   <div class="card"><h3>🧹 Reset</h3><p class="muted danger">सारा local data हट जाएगा।</p><button class="btn red" onclick="resetData()">Reset All Data</button></div>
  </div>
@@ -947,25 +947,60 @@ function backup(){
  try{
    const payload={
      app:"HSC Tracker",
-     version:17,
+     version:18,
      exportedAt:new Date().toISOString(),
      data:JSON.parse(JSON.stringify(S))
    };
-   const text=JSON.stringify(payload,null,2);
-   const blob=new Blob([text],{type:"application/json;charset=utf-8"});
-   const url=URL.createObjectURL(blob);
-   const a=document.createElement("a");
-   a.href=url;
-   a.download="HSC_Tracker_Backup_"+today+".json";
-   a.rel="noopener";
-   document.body.appendChild(a);
-   a.click();
-   a.remove();
-   setTimeout(()=>URL.revokeObjectURL(url),1500);
-   restoreStatus("✅ Backup file तैयार हो गई। Files/Downloads में देखें।",true);
+   const json=JSON.stringify(payload,null,2);
+   const filename="HSC_Tracker_Backup_"+today+".json";
+
+   // iPhone/iPad: use the native Share sheet so the user can choose
+   // "Save to Files". This is more reliable than <a download> on iOS.
+   const file=new File([json],filename,{type:"application/json"});
+   if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+     navigator.share({
+       files:[file],
+       title:"HSC Tracker Backup",
+       text:"HSC Tracker का backup — "+filename
+     }).then(()=>{
+       restoreStatus("✅ Backup तैयार है। Share/Save to Files से इसे सुरक्षित रख लें।",true);
+     }).catch(err=>{
+       // User cancelling the share sheet is not an error.
+       if(err && err.name!=="AbortError") fallbackBackupDownload(json,filename);
+     });
+     return;
+   }
+
+   fallbackBackupDownload(json,filename);
  }catch(err){
    console.error("Backup error",err);
    alert("Backup नहीं बन सका: "+(err.message||err));
+ }
+}
+
+function fallbackBackupDownload(json,filename){
+ try{
+   const blob=new Blob([json],{type:"application/json;charset=utf-8"});
+   const url=URL.createObjectURL(blob);
+   const a=document.createElement("a");
+   a.href=url;
+   a.download=filename;
+   a.target="_blank";
+   a.rel="noopener";
+   document.body.appendChild(a);
+   a.click();
+   setTimeout(()=>{
+     a.remove();
+     URL.revokeObjectURL(url);
+   },1500);
+   restoreStatus("✅ Backup file तैयार हो गई। Downloads/Files में देखें।",true);
+ }catch(err){
+   // Final fallback for browsers that block Blob downloads.
+   const dataUrl="data:application/json;charset=utf-8,"+encodeURIComponent(json);
+   const w=window.open(dataUrl,"_blank");
+   if(!w){
+     alert("Backup तैयार है लेकिन browser ने file save रोक दिया। Share/Save to Files विकल्प से सेव करें।");
+   }
  }
 }
 
@@ -986,7 +1021,7 @@ function handleRestoreFile(input){
      btn.disabled=false;
      btn.textContent="✅ OK — Restore Backup";
      btn.style.display="inline-block";
-     btn.style.pointerEvents="auto";
+     btn.style.pointerEvents="auto"; btn.style.opacity="1";
    }
    restoreStatus("📁 File चुनी गई: <b>"+esc(restoreSelectedFile.name)+"</b><br>अब <b>✅ OK — Restore Backup</b> दबाएँ।",true);
  }else{
@@ -1053,7 +1088,7 @@ window.restoreBackupNow=async function restoreBackupNow(e){
    if(btn){
      btn.textContent="✅ Backup Restored ✓";
      btn.disabled=true;
-     btn.style.display="inline-block";
+     btn.style.display="inline-block"; btn.style.opacity=".55";
    }
    return true;
 
@@ -1063,7 +1098,7 @@ window.restoreBackupNow=async function restoreBackupNow(e){
    if(btn){
      btn.textContent="✅ OK — Restore Backup";
      btn.disabled=false;
-     btn.style.display="inline-block";
+     btn.style.display="inline-block"; btn.style.opacity="1";
    }
    return false;
  }

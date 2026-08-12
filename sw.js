@@ -1,4 +1,4 @@
-const CACHE='hsc-tracker-v15-report-print-restore-fixed';
+const CACHE='hsc-tracker-v18-backup-fixed';
 const AS=['./','./index.html','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
