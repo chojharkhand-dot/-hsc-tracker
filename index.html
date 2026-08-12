@@ -48,6 +48,11 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
 
 .alert-red{border-left:5px solid var(--red)}.alert-amber{border-left:5px solid var(--amber)}.alert-green{border-left:5px solid var(--green)}
 .profile-link{color:var(--blue);font-weight:800;cursor:pointer}.danger-text{color:var(--red);font-weight:800}
+
+/* Reliable iPhone print mode */
+body.report-print-mode > *:not(#printArea){display:none!important}
+body.report-print-mode #printArea{display:block!important;position:static!important;left:auto!important;top:auto!important;width:100%!important;background:#fff!important;padding:14px!important;color:#111!important}
+@media print{body.report-print-mode > *:not(#printArea){display:none!important} body.report-print-mode #printArea{display:block!important;position:static!important;left:auto!important;top:auto!important;width:100%!important}}
 </style>
 </head>
 <body>
@@ -281,7 +286,7 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
  <div class="section"><h2>⚙️ Backup & Settings</h2><span class="muted">आपके data की सुरक्षा के लिए</span></div>
  <div class="grid">
   <div class="card"><h3>💾 Backup</h3><p class="muted">पूरा data एक JSON file में export करें।</p><button class="btn" onclick="backup()">Download Backup</button></div>
-  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json"><button type="button" class="btn secondary" id="restoreBtn" style="margin-top:10px" disabled>↩️ Restore Selected Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
+  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" onchange="handleRestoreFile(this)"><button type="button" class="btn secondary" id="restoreBtn" style="margin-top:10px" disabled onclick="restoreBackupNow()">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
   <div class="card"><h3>📊 CSV Export</h3><p class="muted">Daily, ANC, medicine, diagnostic और activity data अलग-अलग CSV में निकालें।</p><button class="btn" onclick="exportCSV()">Export CSV ZIP</button></div>
   <div class="card"><h3>🧹 Reset</h3><p class="muted danger">सारा local data हट जाएगा।</p><button class="btn red" onclick="resetData()">Reset All Data</button></div>
  </div>
@@ -617,7 +622,8 @@ $("kuseform").onsubmit=e=>{
  persist(); alert("Diagnostic usage saved");
 };
 $("actform").onsubmit=e=>{e.preventDefault();S.acts.push({date:$("actdate").value,type:$("acttype").value,count:n("actcount"),place:$("actplace").value,remark:$("actremark").value});persist();alert("Activity saved")};
-$("rform").onsubmit=e=>{e.preventDefault();renderReports();go("report")}; $("generateReportBtn").onclick=e=>{e.preventDefault();renderReports();go("report")};
+$("rform").onsubmit=e=>{e.preventDefault();return false};
+$("generateReportBtn").onclick=e=>{e.preventDefault();e.stopPropagation();try{renderReports();}catch(err){console.error(err);alert("Report generate नहीं हो सका: "+(err.message||err));} };
 $("psearch").oninput=renderPatient; $("asearch").oninput=renderANC;
 
 function medUsed(i,from="",to=""){return S.meduse.filter(x=>x.med===i&&(!from||x.date>=from)&&(!to||x.date<=to)).reduce((a,x)=>a+x.qty,0)}
@@ -748,33 +754,16 @@ function openReportPrintView(){
    renderReports();
    const pa=$("printArea");
    if(!pa || !pa.innerHTML.trim()){alert("पहले Generate Report करें।");return;}
-   const printHTML=`<!doctype html><html lang="hi"><head><meta charset="utf-8">
-   <meta name="viewport" content="width=device-width,initial-scale=1">
-   <title>HSC Tracker Report</title>
-   <style>
-   @page{size:A4 portrait;margin:12mm}
-   *{box-sizing:border-box}body{font-family:Arial,system-ui,sans-serif;color:#111;background:#fff;margin:0}
-   h1{font-size:20px;margin:0 0 5px}h2{font-size:15px;margin:18px 0 7px;border-bottom:1px solid #ddd;padding-bottom:4px}
-   .printmeta{font-size:11px;color:#555;margin-bottom:10px}.printgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
-   .printcard{border:1px solid #ccc;border-radius:6px;padding:7px}.label{font-size:9px;color:#666}.num{font-size:17px;font-weight:800}
-   table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:10px}th,td{border:1px solid #ccc;padding:4px;text-align:left;vertical-align:top}th{background:#f3f4f6}
-   .actions{position:sticky;top:0;background:#fff;padding:10px 0;border-bottom:1px solid #ddd;margin-bottom:12px}
-   .actions button{padding:10px 14px;border:0;border-radius:8px;font-weight:700;margin-right:8px}
-   @media print{.actions{display:none}}
-   </style></head><body>
-   <div class="actions"><button onclick="window.print()">🖨️ Print / Save PDF</button><button onclick="history.back()">← Back</button></div>
-   ${pa.innerHTML}
-   <script>window.addEventListener('load',()=>{setTimeout(()=>{try{window.print()}catch(e){}},250)})<\/script>
-   </body></html>`;
-   const blob=new Blob([printHTML],{type:"text/html;charset=utf-8"});
-   const url=URL.createObjectURL(blob);
-   const w=window.open(url,"_blank");
-   if(!w){
-     alert("Print view open नहीं हो सका। Safari में pop-up allow करें, फिर दोबारा दबाएँ।");
-     URL.revokeObjectURL(url);
-     return;
-   }
-   setTimeout(()=>URL.revokeObjectURL(url),10000);
+   // Print directly from the current page. This is more reliable on iPhone/Safari
+   // than opening a Blob URL in a new tab.
+   document.body.classList.add("report-print-mode");
+   const oldTitle=document.title;
+   document.title="HSC Tracker Report";
+   setTimeout(()=>{
+     try{window.print();}
+     catch(err){alert("Print / Save PDF नहीं खुल सका: "+(err.message||err));}
+     setTimeout(()=>{document.body.classList.remove("report-print-mode");document.title=oldTitle;},800);
+   },100);
  }catch(err){
    console.error("Report print error",err);
    alert("Report print तैयार नहीं हो सका: "+(err.message||err));
@@ -907,17 +896,22 @@ function restoreStatus(msg,ok=true){
  el.innerHTML=msg;
 }
 let restoreSelectedFile=null;
-$("restoreFile").addEventListener("change",e=>{
- restoreSelectedFile=(e.target.files&&e.target.files[0])||null;
- const btn=$("restoreBtn");
- if(btn) btn.disabled=!restoreSelectedFile;
- if(restoreSelectedFile){
-   restoreStatus("📁 Backup selected: <b>"+esc(restoreSelectedFile.name)+"</b><br>अब <b>Restore Selected Backup</b> दबाएँ।",true);
- }else restoreStatus("कोई backup file नहीं चुनी गई।",false);
-});
-$("restoreBtn").addEventListener("click",async()=>{
- const f=restoreSelectedFile || ($("restoreFile").files&&$("restoreFile").files[0]);
+function handleRestoreFile(input){
+  restoreSelectedFile=(input && input.files && input.files[0]) ? input.files[0] : null;
+  const btn=$("restoreBtn");
+  if(btn) btn.disabled=!restoreSelectedFile;
+  if(restoreSelectedFile){
+    restoreStatus("📁 Backup selected: <b>"+esc(restoreSelectedFile.name)+"</b><br>ऊपर वाला <b>✅ OK — Restore Backup</b> button दबाएँ।",true);
+  }else{
+    restoreStatus("कोई backup file नहीं चुनी गई।",false);
+  }
+}
+async function restoreBackupNow(){
+ const input=$("restoreFile");
+ const f=restoreSelectedFile || (input && input.files && input.files[0]);
  if(!f){restoreStatus("पहले backup JSON file चुनें।",false);return;}
+ const btn=$("restoreBtn");
+ if(btn){btn.disabled=true;btn.textContent="⏳ Restoring…";}
  restoreStatus("⏳ Backup पढ़ा जा रहा है…",true);
  try{
    const text=await new Promise((resolve,reject)=>{
@@ -926,32 +920,30 @@ $("restoreBtn").addEventListener("click",async()=>{
      r.onerror=()=>reject(r.error||new Error("File read failed"));
      r.readAsText(f);
    });
-   if(!text.trim()) throw new Error("empty");
+   if(!text.trim()) throw new Error("Backup file खाली है");
    let x;
    try{x=JSON.parse(text);}catch(e){throw new Error("यह valid JSON backup file नहीं है");}
-   if(!x || typeof x!=="object" || Array.isArray(x)) throw new Error("backup format");
+   if(!x || typeof x!=="object" || Array.isArray(x)) throw new Error("backup format गलत है");
    const keys=["daily","patients","anc","med","meduse","kits","kituse","acts","villages","ri","deliveries"];
    const present=keys.filter(k=>k in x);
    if(!present.length) throw new Error("HSC Tracker data नहीं मिला");
-   const bad=present.some(k=>!Array.isArray(x[k]));
-   if(bad) throw new Error("backup data format गलत है");
+   if(present.some(k=>!Array.isArray(x[k]))) throw new Error("backup data format गलत है");
    const base=JSON.parse(JSON.stringify(defaultState));
    keys.forEach(k=>{if(Array.isArray(x[k]))base[k]=x[k];});
-   if(!Array.isArray(base.med))base.med=[];
-   if(!Array.isArray(base.meduse))base.meduse=[];
    S=base;
    mergeExcelMedicineStock();
    persist();
    render();
    restoreStatus("✅ <b>Backup successfully restored.</b><br>आपका पुराना data वापस आ गया है।",true);
    restoreSelectedFile=null;
-   if($("restoreBtn"))$("restoreBtn").disabled=true;
-   $("restoreFile").value="";
+   if(input) input.value="";
+   if(btn){btn.textContent="✅ OK — Restore Backup";btn.disabled=true;}
  }catch(err){
    console.error("Restore error",err);
    restoreStatus("❌ <b>Backup restore नहीं हुआ.</b><br>"+esc(err.message||"कृपया HSC Tracker की JSON backup file चुनें।"),false);
+   if(btn){btn.textContent="✅ OK — Restore Backup";btn.disabled=false;}
  }
-});
+}
 function csv(rows){return rows.map(r=>r.map(x=>`"${String(x??"").replaceAll('"','""')}"`).join(",")).join("\n")}
 function downloadText(name,text,type="text/csv"){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+text],{type}));a.download=name;a.click()}
 function exportCSV(){downloadText("daily.csv",csv([Object.keys(S.daily[0]||{date:"date"}),...S.daily.map(x=>Object.values(x))]));setTimeout(()=>downloadText("anc.csv",csv([Object.keys(S.anc[0]||{name:"name"}),...S.anc.map(x=>Object.values(x))])),200);setTimeout(()=>downloadText("medicine.csv",csv([["Medicine","Batch","Expiry","Qty","Used","Balance"],...S.med.map((m,i)=>[m.name,m.batch,m.expiry,m.qty,medUsed(i),m.qty-medUsed(i)])])),400);setTimeout(()=>downloadText("diagnostic.csv",csv([["Test","Batch","Expiry","Qty","Used","Balance"],...S.kits.map((k,i)=>[k.name,k.batch,k.expiry,k.qty,kitUsed(i),k.qty-kitUsed(i)])])),600)}
