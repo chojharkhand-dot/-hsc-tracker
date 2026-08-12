@@ -545,6 +545,53 @@ $("addDailyKit").onclick=()=>{
   renderDailyKitList(); updateDailyKitBatches();
 };
 
+
+function selectedDailyTests(){
+  const el=$("dailyTests");
+  if(!el) return [];
+  return Array.from(el.selectedOptions||[]).map(o=>o.value);
+}
+
+function renderDailyTestQty(){
+  const box=$("dailyTestQty");
+  const sel=$("dailyTests");
+  if(!box || !sel) return;
+  const selected=Array.from(sel.selectedOptions||[]).map(o=>o.value);
+  const old={};
+  box.querySelectorAll("[data-test-qty]").forEach(i=>{
+    old[i.getAttribute("data-test-qty")]=i.value;
+  });
+  box.innerHTML="";
+  selected.forEach(test=>{
+    const row=document.createElement("div");
+    row.className="subrow";
+    row.style.display="grid";
+    row.style.gridTemplateColumns="minmax(0,1fr) 120px";
+    row.style.gap="10px";
+    row.style.alignItems="center";
+    row.style.marginBottom="8px";
+
+    const label=document.createElement("label");
+    label.textContent=test;
+    label.style.margin="0";
+    label.style.fontWeight="700";
+
+    const input=document.createElement("input");
+    input.type="number";
+    input.min="0";
+    input.step="1";
+    input.inputMode="numeric";
+    input.placeholder="Qty";
+    input.setAttribute("data-test-qty",test);
+    input.value=old[test] ?? "";
+    input.setAttribute("aria-label",test+" quantity");
+
+    row.appendChild(label);
+    row.appendChild(input);
+    box.appendChild(row);
+  });
+}
+
 function displayMonth(v){
   if(!v)return "";
   const d=new Date(v+"T00:00:00");
