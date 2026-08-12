@@ -191,7 +191,7 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
   <div class="field"><label>Date</label><input type="date" id="rdate"></div>
   <div class="field"><label>Village</label><input id="rvillage" placeholder="Optional"></div>
   <div class="field"><label>Tola</label><input id="rtola" placeholder="Optional"></div>
-  <button class="btn">🔎 Generate Report</button>
+  <button type="button" class="btn" id="generateReportBtn">🔎 Generate Report</button>
   <button type="button" class="btn secondary" id="printReportBtn">🖨️ Print / Save PDF</button>
   <button type="button" class="btn secondary" id="exportReportCsv">📥 Export CSV</button>
  </form></div>
@@ -614,7 +614,6 @@ $("kuseform").onsubmit=e=>{
  persist(); alert("Diagnostic usage saved");
 };
 $("actform").onsubmit=e=>{e.preventDefault();S.acts.push({date:$("actdate").value,type:$("acttype").value,count:n("actcount"),place:$("actplace").value,remark:$("actremark").value});persist();alert("Activity saved")};
-$("rform").onsubmit=e=>{e.preventDefault();renderReports()};
 $("psearch").oninput=renderPatient; $("asearch").oninput=renderANC;
 
 function medUsed(i,from="",to=""){return S.meduse.filter(x=>x.med===i&&(!from||x.date>=from)&&(!to||x.date<=to)).reduce((a,x)=>a+x.qty,0)}
@@ -730,43 +729,53 @@ function renderPrintArea(modeLabel,ds,cards,sum){
 }
 
 
-$("exportReportCsv").onclick=()=>{
- renderReports();
- const rows=[["Report",window.__lastReport?.label||""],["Program",window.__lastReport?.c?.program||""],["Indicator",window.__lastReport?.ind||""],[],["Indicator","Value"]];
- const c=window.__lastReport?.c||getReportData(), ds=window.__lastReport?.ds||[];
- const map=[["OPD","opd"],["Male","male"],["Female","female"],["0–5","age05"],["6–18","age618"],["NCD","ncd"],["HTN","htn"],["Diabetes","dm"],["TB","tb"],["ANC","anc"],["PNC","pnc"],["HBNC","hbnc"],["Telemedicine","tele"],["Referral","referral"],["Camp","camp"],["Wellness","wellness"],["Field Visit","fieldvisit"],["RI","ri"]];
- map.forEach(([n,k])=>rows.push([n,sumDaily(ds,k)]));
- const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
- const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
- const a=document.createElement("a");const url=URL.createObjectURL(blob);a.href=url;a.download="HSC_Report.csv";a.style.display="none";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},1000);
+$("generateReportBtn").onclick=(e)=>{
+  e.preventDefault();
+  try{ renderReports(); go("report"); window.scrollTo({top:0,left:0,behavior:"instant"}); }
+  catch(err){ console.error(err); alert("Report generate नहीं हो सका: "+err.message); }
 };
-$("printReportBtn").onclick=(e)=>{
- e.preventDefault();
+$("rform").addEventListener("submit",e=>{
+  e.preventDefault(); e.stopPropagation();
+  try{ renderReports(); go("report"); }
+  catch(err){ console.error(err); alert("Report generate नहीं हो सका: "+err.message); }
+},true);
+
+$("exportReportCsv").onclick=(e)=>{
+ e.preventDefault(); e.stopPropagation();
  try{
    renderReports();
-   const pa=$("printArea");
-   pa.style.left="0";
-   pa.style.top="0";
-   pa.style.position="static";
-   pa.style.display="block";
-   // iPhone/iPad Safari needs a short layout delay before capturing the print page.
-   setTimeout(()=>{
-     try{ window.print(); }
-     catch(err){ console.error(err); alert("Report print तैयार नहीं हो सका: "+err.message); }
-   },350);
- }catch(err){
-   console.error(err);
-   alert("Report print तैयार नहीं हो सका: "+err.message);
- }
+   const rows=[["Report",window.__lastReport?.label||""],["Program",window.__lastReport?.c?.program||""],["Indicator",window.__lastReport?.ind||""],[],["Indicator","Value"]];
+   const ds=window.__lastReport?.ds||[];
+   const map=[["OPD","opd"],["Male","male"],["Female","female"],["0–5","age05"],["6–18","age618"],["NCD","ncd"],["HTN","htn"],["Diabetes","dm"],["TB","tb"],["ANC","anc"],["PNC","pnc"],["HBNC","hbnc"],["Telemedicine","tele"],["Referral","referral"],["Camp","camp"],["Wellness","wellness"],["Field Visit","fieldvisit"],["RI","ri"]];
+   map.forEach(([n,k])=>rows.push([n,sumDaily(ds,k)]));
+   const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+   const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+   const a=document.createElement("a"); const url=URL.createObjectURL(blob); a.href=url; a.download="HSC_Report.csv"; a.style.display="none"; document.body.appendChild(a); a.click();
+   setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},1000);
+ }catch(err){console.error(err);alert("CSV export नहीं हो सका: "+err.message)}
 };
-window.addEventListener("afterprint",()=>{
- const pa=$("printArea");
- pa.style.left="-100000px";
- pa.style.top="0";
- pa.style.position="absolute";
- pa.style.display="block";
-});
 
+function printCurrentReport(){
+  try{renderReports()}catch(err){console.error("render before print",err)}
+  const pa=$("printArea");
+  if(!pa || !pa.innerHTML.trim()){alert("पहले Generate Report करें।");return}
+  pa.style.display="block"; pa.style.position="fixed"; pa.style.left="0"; pa.style.top="0"; pa.style.width="100%"; pa.style.zIndex="99999"; pa.style.background="#fff";
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    try{ window.print(); }
+    catch(err){
+      console.error(err);
+      const w=window.open("","_blank");
+      if(w){w.document.open();w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>HSC Tracker Report</title><style>body{font-family:Arial,sans-serif;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:5px;text-align:left}th{background:#f3f4f6}</style></head><body>${pa.innerHTML}</body></html>`);w.document.close();w.focus();setTimeout(()=>w.print(),300)}
+      else alert("Print window नहीं खुली। Safari में Share → Print से PDF save करें।");
+    }
+  }));
+}
+$("printReportBtn").onclick=(e)=>{e.preventDefault();e.stopPropagation();printCurrentReport()};
+$("printReportBtn").addEventListener("click",e=>{e.preventDefault();e.stopPropagation()},true);
+window.addEventListener("afterprint",()=>{
+ const pa=$("printArea"); if(!pa)return;
+ pa.style.position="absolute";pa.style.left="-100000px";pa.style.top="0";pa.style.width="100%";pa.style.zIndex="";
+});
 
 function dateDiff(a,b){return Math.floor((new Date(a)-new Date(b))/86400000)}
 function addAlert(arr,when,type,name,detail,ref){if(!when)return;let diff=dateDiff(when,today);let status=diff<0?"Overdue":diff===0?"Today":diff<=7?"Next 7 days":"Upcoming";arr.push({when,type,name,detail,status,ref,diff})}
