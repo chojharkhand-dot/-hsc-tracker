@@ -196,8 +196,8 @@ body.report-print-mode #printArea{display:block!important;position:static!import
   <div class="field" id="rdateWrap"><label>दिन / तारीख चुनें</label><input type="date" id="rdate"></div>
   <div class="field"><label>Village</label><input id="rvillage" placeholder="Optional"></div>
   <div class="field"><label>Tola</label><input id="rtola" placeholder="Optional"></div>
-  <button type="button" class="btn" id="generateReportBtn">🔎 Generate Report</button>
-  <button type="button" class="btn secondary" id="printReportBtn">🖨️ Print / Save PDF</button>
+  <button type="button" class="btn" id="generateReportBtn" onclick="return generateReportNow(event)">🔎 Generate Report</button>
+  <button type="button" class="btn secondary" id="printReportBtn" onclick="return openReportPrintView(event)">🖨️ Print / Save PDF</button>
   <button type="button" class="btn secondary" id="exportReportCsv">📥 Export CSV</button>
  </form></div>
  <div class="section"><h2>Summary</h2></div><div class="grid" id="summary"></div>
@@ -286,7 +286,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
  <div class="section"><h2>⚙️ Backup & Settings</h2><span class="muted">आपके data की सुरक्षा के लिए</span></div>
  <div class="grid">
   <div class="card"><h3>💾 Backup</h3><p class="muted">पूरा data एक JSON file में export करें।</p><button class="btn" onclick="backup()">Download Backup</button></div>
-  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" onchange="handleRestoreFile(this)"><button type="button" class="btn secondary" id="restoreBtn" onclick="return restoreBackupNow();" style="margin-top:10px;display:none;pointer-events:auto">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
+  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" onchange="return handleRestoreFile(this)"><button type="button" class="btn secondary" id="restoreBtn" onclick="return window.restoreBackupNow ? window.restoreBackupNow() : false;" style="margin-top:10px;display:none;pointer-events:auto">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
   <div class="card"><h3>📊 CSV Export</h3><p class="muted">Daily, ANC, medicine, diagnostic और activity data अलग-अलग CSV में निकालें।</p><button class="btn" onclick="exportCSV()">Export CSV ZIP</button></div>
   <div class="card"><h3>🧹 Reset</h3><p class="muted danger">सारा local data हट जाएगा।</p><button class="btn red" onclick="resetData()">Reset All Data</button></div>
  </div>
@@ -790,46 +790,45 @@ $("exportReportCsv").onclick=()=>{
  const a=document.createElement("a");const url=URL.createObjectURL(blob);a.href=url;a.download="HSC_Report.csv";a.style.display="none";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},1000);
 };
 let reportPrintOldTitle="";
+let reportPrintOldHTML="";
 function openReportPrintView(e){
  if(e){e.preventDefault();e.stopPropagation();}
  try{
    renderReports();
    const pa=$("printArea");
-   if(!pa || !pa.innerHTML.trim()){alert("पहले Generate Report करें।");return false;}
-   const reportHTML=pa.innerHTML;
-   const w=window.open("","_blank");
-   if(!w){
-     alert("Print window खुल नहीं पाई। Safari में pop-up/नई window की अनुमति दें और फिर दोबारा दबाएँ।");
+   if(!pa || !pa.innerHTML.trim()){
+     alert("पहले Generate Report करें।");
      return false;
    }
-   const printDoc=`<!doctype html><html lang="hi"><head><meta charset="utf-8">
-   <meta name="viewport" content="width=device-width,initial-scale=1">
-   <title>HSC Tracker Report</title>
-   <style>
-   @page{size:A4 portrait;margin:12mm}
-   *{box-sizing:border-box}body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111;background:#fff;margin:0;padding:14px}
-   h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:18px 0 7px;border-bottom:1px solid #ddd;padding-bottom:4px}
-   .printmeta{font-size:11px;color:#555;margin-bottom:10px}.printgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
-   .printcard{border:1px solid #ccc;border-radius:6px;padding:7px}.printcard .label{font-size:9px;color:#666}.printcard .num{font-size:17px;font-weight:800}
-   table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:10px}th,td{border:1px solid #ccc;padding:4px;text-align:left;vertical-align:top}th{background:#f3f4f6}
-   .print-actions{position:sticky;top:0;background:#fff;padding:8px 0 12px;border-bottom:1px solid #ddd;margin-bottom:12px}
-   .print-actions button{font-size:16px;font-weight:700;padding:11px 16px;border:0;border-radius:8px;margin-right:8px}
-   @media print{.print-actions{display:none!important}body{padding:0}}
-   </style></head><body>
-   <div class="print-actions"><button onclick="window.print()">🖨️ Print / Save PDF</button><button onclick="window.close()">✕ Close</button></div>
-   ${reportHTML}
-   </body></html>`;
-   w.document.open(); w.document.write(printDoc); w.document.close();
-   w.onload=function(){try{setTimeout(function(){w.print()},250)}catch(_){}};
-   return false;
+   reportPrintOldHTML=document.body.innerHTML;
+   reportPrintOldTitle=document.title;
+   const printable=pa.innerHTML;
+   document.body.innerHTML=`<main id="printPage" style="background:#fff;color:#111;padding:14px;font-family:system-ui,-apple-system,sans-serif">
+     <div class="printActions" style="position:sticky;top:0;background:#fff;padding:10px 0 14px;border-bottom:1px solid #ddd;margin-bottom:14px">
+       <button type="button" onclick="window.print()" style="font-size:16px;font-weight:700;padding:12px 16px;border:0;border-radius:8px;margin-right:8px">🖨️ Print / Save PDF</button>
+       <button type="button" onclick="closeReportPrintView()" style="font-size:16px;font-weight:700;padding:12px 16px;border:0;border-radius:8px">✕ Close</button>
+     </div>
+     ${printable}
+   </main>`;
+   document.title="HSC Tracker Report";
+   window.onafterprint=function(){closeReportPrintView();};
+   setTimeout(function(){try{window.print();}catch(err){console.error(err);}},300);
  }catch(err){
    console.error("Report print error",err);
    alert("Print / Save PDF नहीं खुल सका: "+(err.message||err));
-   return false;
+ }
+ return false;
+}
+function closeReportPrintView(){
+ if(reportPrintOldHTML){
+   document.body.innerHTML=reportPrintOldHTML;
+   document.title=reportPrintOldTitle||"HSC Tracker Final";
+   reportPrintOldHTML="";
+   reportPrintOldTitle="";
+   window.onafterprint=null;
+   try{bindAll();}catch(_){}
  }
 }
-$("printReportBtn").onclick=openReportPrintView;
-
 function dateDiff(a,b){return Math.floor((new Date(a)-new Date(b))/86400000)}
 function addAlert(arr,when,type,name,detail,ref){if(!when)return;let diff=dateDiff(when,today);let status=diff<0?"Overdue":diff===0?"Today":diff<=7?"Next 7 days":"Upcoming";arr.push({when,type,name,detail,status,ref,diff})}
 function getAlerts(){
