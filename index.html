@@ -28,7 +28,7 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
 .searchbar{display:flex;gap:8px;flex-wrap:wrap}.searchbar input{max-width:260px}.empty{padding:25px;text-align:center;color:var(--muted)}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.quick{grid-template-columns:repeat(3,1fr)}form{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:540px){header{position:relative}main{padding:11px}.grid{gap:7px}.quick{grid-template-columns:repeat(2,1fr)}form{grid-template-columns:1fr}.full{grid-column:auto}.title{font-size:18px}}
-#printArea{display:none}
+#printArea{display:block;position:absolute;left:-100000px;top:0;width:100%;background:#fff;color:#111}
 @media print{
   @page{size:A4 portrait;margin:12mm}
   body{background:#fff!important;color:#111}
@@ -714,8 +714,19 @@ function renderReports(){
  window.__lastReport={c,ds,activeCards,label,ind};
 }
 function renderPrintArea(modeLabel,ds,cards,sum){
- const section=(title,id)=>`<h2>${title}</h2>${$(id).outerHTML}`;
- $("printArea").innerHTML=`<h1>🏥 HSC Tracker — Report</h1><div class="printmeta">${modeLabel} • Generated: ${new Date().toLocaleString("en-IN")}</div><div class="printgrid">${cards.map(a=>`<div class="printcard"><div class="label">${a[0]}</div><div class="num">${sum(a[1])}</div></div>`).join("")}</div>${section("Age-wise OPD","ageTable")}${section("Medicine Consumption","medReport")}${section("Diagnostic Usage","kitReport")}${section("ANC / EDD / HRP","ancReport")}${section("Activities","activityReport")}`;
+ const section=(title,id)=>{
+   const el=$(id);
+   return el ? `<h2>${title}</h2>${el.outerHTML}` : "";
+ };
+ $("printArea").innerHTML=`<h1>🏥 HSC Tracker — Report</h1>
+ <div class="printmeta">${modeLabel} • Generated: ${new Date().toLocaleString("en-IN")}</div>
+ <div class="printgrid">${cards.map(a=>`<div class="printcard"><div class="label">${a[0]}</div><div class="num">${sum(a[1])}</div></div>`).join("")}</div>
+ ${section("Age-wise OPD","ageTable")}
+ ${section("Medicine Consumption","medReport")}
+ ${section("Diagnostic Usage","kitReport")}
+ ${section("ANC / EDD / HRP","ancReport")}
+ ${section("Activities","activityReport")}
+ ${section("Patient / Follow-up","patientReport")}`;
 }
 
 
@@ -729,7 +740,32 @@ $("exportReportCsv").onclick=()=>{
  const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
  const a=document.createElement("a");const url=URL.createObjectURL(blob);a.href=url;a.download="HSC_Report.csv";a.style.display="none";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},1000);
 };
-$("printReportBtn").onclick=(e)=>{e.preventDefault();try{renderReports();window.print()}catch(err){console.error(err);alert("Report print तैयार नहीं हो सका: "+err.message)}};
+$("printReportBtn").onclick=(e)=>{
+ e.preventDefault();
+ try{
+   renderReports();
+   const pa=$("printArea");
+   pa.style.left="0";
+   pa.style.top="0";
+   pa.style.position="static";
+   pa.style.display="block";
+   // iPhone/iPad Safari needs a short layout delay before capturing the print page.
+   setTimeout(()=>{
+     try{ window.print(); }
+     catch(err){ console.error(err); alert("Report print तैयार नहीं हो सका: "+err.message); }
+   },350);
+ }catch(err){
+   console.error(err);
+   alert("Report print तैयार नहीं हो सका: "+err.message);
+ }
+};
+window.addEventListener("afterprint",()=>{
+ const pa=$("printArea");
+ pa.style.left="-100000px";
+ pa.style.top="0";
+ pa.style.position="absolute";
+ pa.style.display="block";
+});
 
 
 function dateDiff(a,b){return Math.floor((new Date(a)-new Date(b))/86400000)}
