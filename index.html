@@ -271,7 +271,12 @@ body.report-print-mode #printArea{display:block!important;position:static!import
  <div class="card"><form id="vform">
   <div class="field"><label>Village</label><input id="vname" required></div><div class="field"><label>Population</label><input type="number" id="vpop" min="0"></div><div class="field"><label>Male</label><input type="number" id="vmale" min="0"></div><div class="field"><label>Female</label><input type="number" id="vfemale" min="0"></div>
   <div class="field"><label>Children</label><input type="number" id="vchild" min="0"></div><div class="field"><label>Elderly</label><input type="number" id="velderly" min="0"></div><div class="field"><label>Sahiya</label><input id="vsahiya"></div><div class="field"><label>ANM</label><input id="vanm"></div>
-  <div class="field full"><label>Sub-Tola / Tola (comma separated)</label><input id="vtolas" placeholder="Main Tola, Hansda Tola, Soren Tola"></div>
+  <div class="field full">
+   <label>Sub-Tola / Tola</label>
+   <div id="vTolaRows"></div>
+   <button type="button" class="btn secondary full" id="addTolaBtn" style="margin-top:8px">➕ Add Tola</button>
+   <div id="tolaTotalNote" class="muted" style="margin-top:8px">हर Tola का नाम और उसकी Population अलग-अलग भरें।</div>
+  </div>
   <button class="btn full">💾 Save Village</button>
  </form></div>
  <div class="tablewrap"><table class="table" id="villageTable"></table></div>
@@ -920,10 +925,58 @@ function renderAlerts(){
  table("alertTable",["Date","Type","Patient","Details","Status"],a.slice(0,150).map(x=>[x.when,x.type,`<span class="profile-link" onclick="openAlert('${esc(x.ref)}')">${esc(x.name)}</span>`,esc(x.detail),`<span class="tag ${x.diff<0?"red":x.diff<=7?"amber":""}">${x.status}</span>`]));
 }
 function openAlert(ref){let [type,i]=ref.split(":"); if(type==="anc"){go("anc");} else if(type==="patient"){go("patient");} else if(type==="delivery"){go("delivery");} else if(type==="medicine"){go("medicine");} else if(type==="diagnostic"){go("diagnostic");} else if(type==="ri"){go("ri");}}
-function renderVillage(){
- table("villageTable",["Village","Population","Male","Female","Children","Elderly","Sahiya","ANM","Tola"],S.villages.slice().reverse().map(x=>[x.name,x.population,x.male,x.female,x.children,x.elderly,x.sahiya,x.anm,(x.tolas||[]).join(", ")]));
+function villageTolaData(){
+ return [...document.querySelectorAll(".tola-row")].map(r=>({
+   name:(r.querySelector(".tola-name")?.value||"").trim(),
+   population:+(r.querySelector(".tola-pop")?.value||0)
+ })).filter(x=>x.name);
 }
-$("vform").onsubmit=e=>{e.preventDefault();let name=$("vname").value.trim();if(!name)return;let old=S.villages.find(x=>x.name.toLowerCase()===name.toLowerCase());let obj={name,population:n("vpop"),male:n("vmale"),female:n("vfemale"),children:n("vchild"),elderly:n("velderly"),sahiya:$("vsahiya").value,anm:$("vanm").value,tolas:$("vtolas").value.split(",").map(x=>x.trim()).filter(Boolean)};if(old)Object.assign(old,obj);else S.villages.push(obj);persist();e.target.reset();alert("Village saved")};
+function addTolaRow(name="",population=""){
+ const wrap=$("vTolaRows"); if(!wrap)return;
+ const row=document.createElement("div"); row.className="tola-row"; row.style.cssText="display:grid;grid-template-columns:minmax(0,1fr) 120px 44px;gap:8px;margin:8px 0;align-items:center";
+ row.innerHTML=`<input class="tola-name" placeholder="Tola का नाम" value="${esc(name)}"><input class="tola-pop" type="number" min="0" placeholder="Population" value="${population}"><button type="button" class="btn danger remove-tola" title="Remove">✕</button>`;
+ row.querySelector(".remove-tola").onclick=()=>{row.remove();updateTolaTotal()};
+ row.querySelector(".tola-pop").oninput=updateTolaTotal;
+ wrap.appendChild(row); updateTolaTotal();
+}
+function updateTolaTotal(){
+ const total=villageTolaData().reduce((a,x)=>a+(+x.population||0),0), pop=+$("vpop").value||0;
+ const note=$("tolaTotalNote"); if(!note)return;
+ if(total===0){note.textContent="हर Tola का नाम और उसकी Population अलग-अलग भरें।";note.className="muted";return}
+ note.textContent=`Tola population: ${total} / Village total: ${pop} ${total===pop?"✅ Total match":"⚠️ Total match नहीं है"}`;
+ note.className=total===pop?"tag":"tag amber";
+}
+function loadVillageTolas(tolas){
+ $("vTolaRows").innerHTML="";
+ (Array.isArray(tolas)?tolas:[]).forEach(t=>{
+   if(typeof t==="string") addTolaRow(t,"");
+   else addTolaRow(t.name||"",t.population||0);
+ });
+ if(!tolas||!tolas.length)addTolaRow();
+}
+function renderVillage(){
+ table("villageTable",["Village","Population","Male","Female","Children","Elderly","Sahiya","ANM","Tola / Tola Population"],S.villages.slice().reverse().map(x=>{
+   const ts=(x.tolas||[]).map(t=>typeof t==="string"?t:`${t.name} (${t.population||0})`);
+   return [x.name,x.population,x.male,x.female,x.children,x.elderly,x.sahiya,x.anm,ts.join(", ")];
+ }));
+}
+$("vpop").oninput=updateTolaTotal;
+$("addTolaBtn").onclick=()=>addTolaRow();
+$("vform").onsubmit=e=>{
+ e.preventDefault();
+ let name=$("vname").value.trim(); if(!name)return;
+ const population=n("vpop"), tolas=villageTolaData();
+ const tolaTotal=tolas.reduce((a,x)=>a+(+x.population||0),0);
+ if(tolas.length && tolaTotal!==population){
+   if(!confirm(`Village population ${population} है लेकिन Tola population ${tolaTotal} है। फिर भी save करना है?`))return false;
+ }
+ let old=S.villages.find(x=>x.name.toLowerCase()===name.toLowerCase());
+ let obj={name,population,male:n("vmale"),female:n("vfemale"),children:n("vchild"),elderly:n("velderly"),sahiya:$("vsahiya").value,anm:$("vanm").value,tolas};
+ if(old)Object.assign(old,obj);else S.villages.push(obj);
+ persist(); e.target.reset(); $("vTolaRows").innerHTML=""; addTolaRow(); alert("Village saved"); return false;
+};
+
+if($("vTolaRows") && !$("vTolaRows").children.length) addTolaRow();
 $("riform").onsubmit=e=>{e.preventDefault();S.ri.push({village:$("rivillage").value,awc:$("riawc").value,week:$("riweek").value,day:$("riday").value,remark:$("rirem").value});persist();e.target.reset();alert("RI schedule saved")};
 function renderRI(){table("riTable",["Village","AWC/Site","Week","Day","Remarks"],S.ri.slice().reverse().map(x=>[x.village,x.awc,x.week,x.day,x.remark]));let now=new Date();let day=now.toLocaleDateString("en-US",{weekday:"long"});$("riAlerts").innerHTML=S.ri.filter(x=>x.day===day).map(x=>`<div class="card alert-amber"><b>🔔 Today RI: ${esc(x.village)}</b><div>${esc(x.awc||"")} • ${esc(x.week)} ${esc(x.day)}</div></div>`).join("")||'<span class="muted">आज के लिए कोई RI schedule नहीं।</span>'}
 $("deliveryForm").onsubmit=e=>{e.preventDefault();let x={mother:$("dvmother").value,village:$("dvvillage").value,mobile:$("dvmobile").value,dob:$("dvdob").value,baby:$("dvbaby").value,sex:$("dvsex").value,weight:$("dvweight").value,type:$("dvtype").value,remark:$("dvremark").value};S.deliveries.push(x);S.patients.push({date:x.dob,name:x.mother,age:"",sex:"Female",village:x.village,mobile:x.mobile,condition:"Post Delivery",next:x.dob,remark:"Delivery recorded"});persist();e.target.reset();alert("Delivery saved — HBNC & immunization alerts created")};
