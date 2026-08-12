@@ -286,7 +286,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
  <div class="section"><h2>⚙️ Backup & Settings</h2><span class="muted">आपके data की सुरक्षा के लिए</span></div>
  <div class="grid">
   <div class="card"><h3>💾 Backup</h3><p class="muted">पूरा data एक JSON file में export करें।</p><button class="btn" onclick="backup()">Download Backup</button></div>
-  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" onchange="handleRestoreFile(this)"><button type="button" class="btn secondary" id="restoreBtn" disabled style="margin-top:10px;display:inline-block;pointer-events:auto;touch-action:manipulation">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
+  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" style="display:block;width:100%;margin-top:8px"><button type="button" class="btn secondary" id="restoreBtn" disabled onclick="return window.restoreBackupNow(event)" style="margin-top:10px;display:inline-block;pointer-events:auto;touch-action:manipulation">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
   <div class="card"><h3>📊 CSV Export</h3><p class="muted">Daily, ANC, medicine, diagnostic और activity data अलग-अलग CSV में निकालें।</p><button class="btn" onclick="exportCSV()">Export CSV ZIP</button></div>
   <div class="card"><h3>🧹 Reset</h3><p class="muted danger">सारा local data हट जाएगा।</p><button class="btn red" onclick="resetData()">Reset All Data</button></div>
  </div>
@@ -943,33 +943,71 @@ function render(){
  renderReports();renderAlerts();renderVillage();renderRI();renderDelivery();
 }
 
-function backup(){let blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="HSC_Tracker_Backup_"+today+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function backup(){
+ try{
+   const payload={
+     app:"HSC Tracker",
+     version:17,
+     exportedAt:new Date().toISOString(),
+     data:JSON.parse(JSON.stringify(S))
+   };
+   const text=JSON.stringify(payload,null,2);
+   const blob=new Blob([text],{type:"application/json;charset=utf-8"});
+   const url=URL.createObjectURL(blob);
+   const a=document.createElement("a");
+   a.href=url;
+   a.download="HSC_Tracker_Backup_"+today+".json";
+   a.rel="noopener";
+   document.body.appendChild(a);
+   a.click();
+   a.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),1500);
+   restoreStatus("✅ Backup file तैयार हो गई। Files/Downloads में देखें।",true);
+ }catch(err){
+   console.error("Backup error",err);
+   alert("Backup नहीं बन सका: "+(err.message||err));
+ }
+}
+
 function restoreStatus(msg,ok=true){
  const el=$("restoreStatus"); if(!el)return;
  el.style.display="block";
  el.className="notice "+(ok?"":"danger");
  el.innerHTML=msg;
 }
+
 let restoreSelectedFile=null;
+
 function handleRestoreFile(input){
-  restoreSelectedFile=(input && input.files && input.files[0]) ? input.files[0] : null;
-  const btn=$("restoreBtn");
-  if(restoreSelectedFile){
-    if(btn){btn.style.display="inline-block";btn.disabled=false;btn.textContent="✅ OK — Restore Backup";btn.style.pointerEvents="auto";}
-    restoreStatus("📁 Backup selected: <b>"+esc(restoreSelectedFile.name)+"</b><br>अब नीचे <b>✅ OK — Restore Backup</b> दबाएँ।",true);
-  }else{
-    if(btn){btn.style.display="inline-block";btn.disabled=true;btn.textContent="✅ OK — Restore Backup";}
-    restoreStatus("कोई backup file नहीं चुनी गई।",false);
-  }
+ restoreSelectedFile=(input && input.files && input.files[0]) ? input.files[0] : null;
+ const btn=$("restoreBtn");
+ if(restoreSelectedFile){
+   if(btn){
+     btn.disabled=false;
+     btn.textContent="✅ OK — Restore Backup";
+     btn.style.display="inline-block";
+     btn.style.pointerEvents="auto";
+   }
+   restoreStatus("📁 File चुनी गई: <b>"+esc(restoreSelectedFile.name)+"</b><br>अब <b>✅ OK — Restore Backup</b> दबाएँ।",true);
+ }else{
+   if(btn){btn.disabled=true;btn.textContent="✅ OK — Restore Backup";}
+   restoreStatus("पहले backup JSON file चुनें।",false);
+ }
 }
 window.handleRestoreFile=handleRestoreFile;
-window.restoreBackupNow=async function restoreBackupNow(){
+
+window.restoreBackupNow=async function restoreBackupNow(e){
+ if(e){e.preventDefault();e.stopPropagation();}
  const input=$("restoreFile");
  const f=restoreSelectedFile || (input && input.files && input.files[0]);
- if(!f){restoreStatus("पहले backup JSON file चुनें।",false);return false;}
  const btn=$("restoreBtn");
+ if(!f){
+   restoreStatus("❌ पहले backup JSON file चुनें।",false);
+   return false;
+ }
  if(btn){btn.disabled=true;btn.textContent="⏳ Restoring…";}
  restoreStatus("⏳ Backup पढ़ा जा रहा है…",true);
+
  try{
    const text=await new Promise((resolve,reject)=>{
      const r=new FileReader();
@@ -977,38 +1015,66 @@ window.restoreBackupNow=async function restoreBackupNow(){
      r.onerror=()=>reject(r.error||new Error("File read failed"));
      r.readAsText(f);
    });
+
    if(!text.trim()) throw new Error("Backup file खाली है");
-   let x;
-   try{x=JSON.parse(text);}catch(e){throw new Error("यह valid JSON backup file नहीं है");}
-   if(!x || typeof x!=="object" || Array.isArray(x)) throw new Error("backup format गलत है");
-   const keys=["daily","patients","anc","med","meduse","kits","kituse","acts","villages","ri","deliveries"];
-   const present=keys.filter(k=>Array.isArray(x[k]));
+
+   let raw;
+   try{raw=JSON.parse(text);}catch(err){throw new Error("यह valid JSON backup file नहीं है");}
+
+   // Accept old and new backup formats.
+   let x=raw;
+   if(raw && raw.data && typeof raw.data==="object" && !Array.isArray(raw.data)) x=raw.data;
+   else if(raw && raw.state && typeof raw.state==="object" && !Array.isArray(raw.state)) x=raw.state;
+   else if(raw && raw.S && typeof raw.S==="object" && !Array.isArray(raw.S)) x=raw.S;
+
+   if(!x || typeof x!=="object" || Array.isArray(x)) throw new Error("Backup format गलत है");
+
+   const arrayKeys=["daily","patients","anc","med","meduse","kits","kituse","acts","villages","ri","deliveries"];
+   const present=arrayKeys.filter(k=>Array.isArray(x[k]));
    if(!present.length) throw new Error("HSC Tracker data नहीं मिला");
+
+   // Preserve every known data table and also preserve any future fields.
    const base=JSON.parse(JSON.stringify(defaultState));
-   present.forEach(k=>{base[k]=x[k];});
+   Object.keys(x).forEach(k=>{
+     if(k in base) base[k]=Array.isArray(x[k]) ? x[k] : base[k];
+   });
+   // Ensure all standard arrays exist.
+   arrayKeys.forEach(k=>{if(!Array.isArray(base[k]))base[k]=[];});
+
    S=base;
    mergeExcelMedicineStock();
-   persist();
+   localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));
    render();
+   go("backup");
+
    restoreStatus("✅ <b>Backup successfully restored.</b><br>आपका पुराना data वापस आ गया है।",true);
    restoreSelectedFile=null;
    if(input) input.value="";
-   if(btn){btn.textContent="✅ Backup Restored ✓";btn.disabled=true;btn.style.display="inline-block";}
+   if(btn){
+     btn.textContent="✅ Backup Restored ✓";
+     btn.disabled=true;
+     btn.style.display="inline-block";
+   }
    return true;
+
  }catch(err){
    console.error("Restore error",err);
-   restoreStatus("❌ <b>Backup restore नहीं हुआ.</b><br>"+esc(err.message||"कृपया HSC Tracker की JSON backup file चुनें।"),false);
-   if(btn){btn.textContent="✅ OK — Restore Backup";btn.disabled=false;btn.style.display="inline-block";}
+   restoreStatus("❌ <b>Backup restore नहीं हुआ.</b><br>"+esc(err.message||"कृपया सही HSC Tracker JSON backup चुनें।"),false);
+   if(btn){
+     btn.textContent="✅ OK — Restore Backup";
+     btn.disabled=false;
+     btn.style.display="inline-block";
+   }
    return false;
  }
 };
-const __restoreFile=$("restoreFile"), __restoreBtn=$("restoreBtn");
 
-if(__restoreBtn) __restoreBtn.addEventListener("click",function(e){
- e.preventDefault(); e.stopPropagation();
- if(this.disabled)return false;
- return window.restoreBackupNow();
-});
+const __restoreFile=$("restoreFile");
+if(__restoreFile){
+ __restoreFile.addEventListener("change",function(){
+   handleRestoreFile(this);
+ });
+}
 function csv(rows){return rows.map(r=>r.map(x=>`"${String(x??"").replaceAll('"','""')}"`).join(",")).join("\n")}
 function downloadText(name,text,type="text/csv"){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+text],{type}));a.download=name;a.click()}
 function exportCSV(){downloadText("daily.csv",csv([Object.keys(S.daily[0]||{date:"date"}),...S.daily.map(x=>Object.values(x))]));setTimeout(()=>downloadText("anc.csv",csv([Object.keys(S.anc[0]||{name:"name"}),...S.anc.map(x=>Object.values(x))])),200);setTimeout(()=>downloadText("medicine.csv",csv([["Medicine","Batch","Expiry","Qty","Used","Balance"],...S.med.map((m,i)=>[m.name,m.batch,m.expiry,m.qty,medUsed(i),m.qty-medUsed(i)])])),400);setTimeout(()=>downloadText("diagnostic.csv",csv([["Test","Batch","Expiry","Qty","Used","Balance"],...S.kits.map((k,i)=>[k.name,k.batch,k.expiry,k.qty,kitUsed(i),k.qty-kitUsed(i)])])),600)}
