@@ -286,7 +286,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
  <div class="section"><h2>⚙️ Backup & Settings</h2><span class="muted">आपके data की सुरक्षा के लिए</span></div>
  <div class="grid">
   <div class="card"><h3>💾 Backup</h3><p class="muted">पूरा data एक JSON file में export करें।</p><button class="btn" onclick="backup()">Download Backup</button></div>
-  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json"><button type="button" class="btn secondary" id="restoreBtn" style="margin-top:10px;display:none;pointer-events:auto;touch-action:manipulation">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
+  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" onchange="handleRestoreFile(this)"><button type="button" class="btn secondary" id="restoreBtn" disabled style="margin-top:10px;display:inline-block;pointer-events:auto;touch-action:manipulation">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
   <div class="card"><h3>📊 CSV Export</h3><p class="muted">Daily, ANC, medicine, diagnostic और activity data अलग-अलग CSV में निकालें।</p><button class="btn" onclick="exportCSV()">Export CSV ZIP</button></div>
   <div class="card"><h3>🧹 Reset</h3><p class="muted danger">सारा local data हट जाएगा।</p><button class="btn red" onclick="resetData()">Reset All Data</button></div>
  </div>
@@ -799,29 +799,24 @@ $("exportReportCsv").onclick=()=>{
  const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
  const a=document.createElement("a");const url=URL.createObjectURL(blob);a.href=url;a.download="HSC_Report.csv";a.style.display="none";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},1000);
 };
-window.__reportPrintState={active:false};
 function openReportPrintView(e){
  if(e){e.preventDefault();e.stopPropagation();}
  try{
-   // Build the report in the existing print area; never replace document.body.
    renderReports();
    const pa=$("printArea");
    if(!pa || !pa.innerHTML.trim()){
      alert("पहले Generate Report करें।");
      return false;
    }
-   window.__reportPrintState.active=true;
    document.body.classList.add("report-print-mode");
    document.title="HSC Tracker Report";
    window.onafterprint=function(){closeReportPrintView();};
-   // iPhone/Safari needs the print call to happen from the user gesture.
-   setTimeout(function(){
-     try{window.print();}
-     catch(err){console.error("window.print error",err);alert("Print / Save PDF नहीं खुल सका: "+(err.message||err));}
-   },50);
+   window.print();
  }catch(err){
    console.error("Report print error",err);
    document.body.classList.remove("report-print-mode");
+   window.onafterprint=null;
+   document.title="HSC Tracker Final";
    alert("Print / Save PDF नहीं खुल सका: "+(err.message||err));
  }
  return false;
@@ -829,7 +824,6 @@ function openReportPrintView(e){
 function closeReportPrintView(){
  document.body.classList.remove("report-print-mode");
  document.title="HSC Tracker Final";
- window.__reportPrintState.active=false;
  window.onafterprint=null;
 }
 function dateDiff(a,b){return Math.floor((new Date(a)-new Date(b))/86400000)}
@@ -964,7 +958,7 @@ function handleRestoreFile(input){
     if(btn){btn.style.display="inline-block";btn.disabled=false;btn.textContent="✅ OK — Restore Backup";btn.style.pointerEvents="auto";}
     restoreStatus("📁 Backup selected: <b>"+esc(restoreSelectedFile.name)+"</b><br>अब नीचे <b>✅ OK — Restore Backup</b> दबाएँ।",true);
   }else{
-    if(btn){btn.style.display="none";}
+    if(btn){btn.style.display="inline-block";btn.disabled=true;btn.textContent="✅ OK — Restore Backup";}
     restoreStatus("कोई backup file नहीं चुनी गई।",false);
   }
 }
@@ -1009,8 +1003,12 @@ window.restoreBackupNow=async function restoreBackupNow(){
  }
 };
 const __restoreFile=$("restoreFile"), __restoreBtn=$("restoreBtn");
-if(__restoreFile) __restoreFile.addEventListener("change",function(){handleRestoreFile(this)});
-if(__restoreBtn) __restoreBtn.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();window.restoreBackupNow();});
+
+if(__restoreBtn) __restoreBtn.addEventListener("click",function(e){
+ e.preventDefault(); e.stopPropagation();
+ if(this.disabled)return false;
+ return window.restoreBackupNow();
+});
 function csv(rows){return rows.map(r=>r.map(x=>`"${String(x??"").replaceAll('"','""')}"`).join(",")).join("\n")}
 function downloadText(name,text,type="text/csv"){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+text],{type}));a.download=name;a.click()}
 function exportCSV(){downloadText("daily.csv",csv([Object.keys(S.daily[0]||{date:"date"}),...S.daily.map(x=>Object.values(x))]));setTimeout(()=>downloadText("anc.csv",csv([Object.keys(S.anc[0]||{name:"name"}),...S.anc.map(x=>Object.values(x))])),200);setTimeout(()=>downloadText("medicine.csv",csv([["Medicine","Batch","Expiry","Qty","Used","Balance"],...S.med.map((m,i)=>[m.name,m.batch,m.expiry,m.qty,medUsed(i),m.qty-medUsed(i)])])),400);setTimeout(()=>downloadText("diagnostic.csv",csv([["Test","Batch","Expiry","Qty","Used","Balance"],...S.kits.map((k,i)=>[k.name,k.batch,k.expiry,k.qty,kitUsed(i),k.qty-kitUsed(i)])])),600)}
