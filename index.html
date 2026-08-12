@@ -192,8 +192,8 @@ body.report-print-mode #printArea{display:block!important;position:static!import
    <option value="all">All Reports</option><option value="daily">Daily / OPD</option><option value="anc">ANC</option><option value="hrp">HRP</option><option value="ncd">NCD</option><option value="tb">TB</option><option value="hbnc">HBNC/PNC</option><option value="ri">RI</option><option value="medicine">Medicine</option><option value="diagnostic">Diagnostic</option><option value="activities">Activities</option><option value="delivery">Delivery / Baby</option><option value="alerts">Alerts</option>
   </select></div>
   <div class="field"><label>Indicator</label><select id="rindicator"><option value="all">All indicators</option></select></div>
-  <div class="field"><label>Month</label><input type="month" id="rmonth"></div>
-  <div class="field"><label>Date</label><input type="date" id="rdate"></div>
+  <div class="field" id="rmonthWrap"><label>Month / Year चुनें</label><input type="month" id="rmonth"></div>
+  <div class="field" id="rdateWrap"><label>दिन / तारीख चुनें</label><input type="date" id="rdate"></div>
   <div class="field"><label>Village</label><input id="rvillage" placeholder="Optional"></div>
   <div class="field"><label>Tola</label><input id="rtola" placeholder="Optional"></div>
   <button type="button" class="btn" id="generateReportBtn">🔎 Generate Report</button>
@@ -286,7 +286,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
  <div class="section"><h2>⚙️ Backup & Settings</h2><span class="muted">आपके data की सुरक्षा के लिए</span></div>
  <div class="grid">
   <div class="card"><h3>💾 Backup</h3><p class="muted">पूरा data एक JSON file में export करें।</p><button class="btn" onclick="backup()">Download Backup</button></div>
-  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" onchange="handleRestoreFile(this)"><button type="button" class="btn secondary" id="restoreBtn" style="margin-top:10px" disabled onclick="restoreBackupNow()">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
+  <div class="card"><h3>↩️ Restore</h3><p class="muted">पहले का backup वापस डालें।</p><input type="file" id="restoreFile" accept=".json,application/json" onchange="handleRestoreFile(this)"><button type="button" class="btn secondary" id="restoreBtn" style="margin-top:10px;display:none;pointer-events:auto">✅ OK — Restore Backup</button><div id="restoreStatus" class="notice" style="margin-top:10px;display:none"></div></div>
   <div class="card"><h3>📊 CSV Export</h3><p class="muted">Daily, ANC, medicine, diagnostic और activity data अलग-अलग CSV में निकालें।</p><button class="btn" onclick="exportCSV()">Export CSV ZIP</button></div>
   <div class="card"><h3>🧹 Reset</h3><p class="muted danger">सारा local data हट जाएगा।</p><button class="btn red" onclick="resetData()">Reset All Data</button></div>
  </div>
@@ -623,7 +623,16 @@ $("kuseform").onsubmit=e=>{
 };
 $("actform").onsubmit=e=>{e.preventDefault();S.acts.push({date:$("actdate").value,type:$("acttype").value,count:n("actcount"),place:$("actplace").value,remark:$("actremark").value});persist();alert("Activity saved")};
 $("rform").onsubmit=e=>{e.preventDefault();return false};
-$("generateReportBtn").onclick=e=>{e.preventDefault();e.stopPropagation();try{renderReports();}catch(err){console.error(err);alert("Report generate नहीं हो सका: "+(err.message||err));} };
+function generateReportNow(e){
+ if(e){e.preventDefault();e.stopImmediatePropagation();}
+ try{
+   renderReports();
+   const el=$("summary");
+   if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
+ }catch(err){console.error("Report generate error",err);alert("Report generate नहीं हो सका: "+(err.message||err));}
+ return false;
+}
+$("generateReportBtn").onclick=generateReportNow;
 $("psearch").oninput=renderPatient; $("asearch").oninput=renderANC;
 
 function medUsed(i,from="",to=""){return S.meduse.filter(x=>x.med===i&&(!from||x.date>=from)&&(!to||x.date<=to)).reduce((a,x)=>a+x.qty,0)}
@@ -654,12 +663,22 @@ function updateReportIndicators(){
  const list=REPORT_INDICATORS[p]||REPORT_INDICATORS.all;
  $("rindicator").innerHTML=list.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");
 }
+function updateReportModeUI(){
+ const mode=$("rmode").value||"day";
+ const mw=$("rmonthWrap"), dw=$("rdateWrap"), mi=$("rmonth"), di=$("rdate");
+ if(mw) mw.style.display=mode==="month"?"flex":"none";
+ if(dw) dw.style.display=mode==="day"?"flex":"none";
+ if(mode==="month" && mi && !mi.value) mi.value=thisMonth;
+ if(mode==="day" && di && !di.value) di.value=today;
+}
 $("rprogram").onchange=updateReportIndicators;
+$("rmode").onchange=updateReportModeUI;
 updateReportIndicators();
+updateReportModeUI();
 
 function getReportData(){
  let mode=$("rmode").value||"day", mo=$("rmonth").value||thisMonth, specific=$("rdate").value||today;
- return {mode,mo,specific,village:($("rvillage").value||"").trim().toLowerCase(),tola:($("rtola").value||"").trim().toLowerCase(),program:$("rprogram").value,indicator:$("rindicator").value};
+ return {mode,mo,specific,village:$("rvillage").value.trim().toLowerCase(),tola:$("rtola").value.trim().toLowerCase(),program:$("rprogram").value,indicator:$("rindicator").value};
 }
 function inRange(date,mode,specific,mo){
  if(!date)return mode==="all";
@@ -749,27 +768,29 @@ $("exportReportCsv").onclick=()=>{
  const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
  const a=document.createElement("a");const url=URL.createObjectURL(blob);a.href=url;a.download="HSC_Report.csv";a.style.display="none";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},1000);
 };
-function openReportPrintView(){
+let reportPrintOldTitle="";
+function openReportPrintView(e){
+ if(e){e.preventDefault();e.stopImmediatePropagation();}
  try{
    renderReports();
    const pa=$("printArea");
-   if(!pa || !pa.innerHTML.trim()){alert("पहले Generate Report करें।");return;}
-   // Print directly from the current page. This is more reliable on iPhone/Safari
-   // than opening a Blob URL in a new tab.
-   document.body.classList.add("report-print-mode");
-   const oldTitle=document.title;
+   if(!pa || !pa.innerHTML.trim()){alert("पहले Generate Report करें।");return false;}
+   reportPrintOldTitle=document.title;
    document.title="HSC Tracker Report";
-   setTimeout(()=>{
-     try{window.print();}
-     catch(err){alert("Print / Save PDF नहीं खुल सका: "+(err.message||err));}
-     setTimeout(()=>{document.body.classList.remove("report-print-mode");document.title=oldTitle;},800);
-   },100);
+   document.body.classList.add("report-print-mode");
+   // IMPORTANT: iPhone/Safari can block window.print() if it is called from setTimeout.
+   // Call it directly inside the user click event.
+   window.print();
  }catch(err){
    console.error("Report print error",err);
-   alert("Report print तैयार नहीं हो सका: "+(err.message||err));
+   document.body.classList.remove("report-print-mode");
+   document.title=reportPrintOldTitle||document.title;
+   alert("Print / Save PDF नहीं खुल सका: "+(err.message||err));
  }
+ return false;
 }
-$("printReportBtn").onclick=e=>{e.preventDefault();e.stopPropagation();openReportPrintView()};
+window.addEventListener("afterprint",()=>{document.body.classList.remove("report-print-mode");if(reportPrintOldTitle)document.title=reportPrintOldTitle;});
+$("printReportBtn").onclick=openReportPrintView;
 
 function dateDiff(a,b){return Math.floor((new Date(a)-new Date(b))/86400000)}
 function addAlert(arr,when,type,name,detail,ref){if(!when)return;let diff=dateDiff(when,today);let status=diff<0?"Overdue":diff===0?"Today":diff<=7?"Next 7 days":"Upcoming";arr.push({when,type,name,detail,status,ref,diff})}
@@ -899,14 +920,16 @@ let restoreSelectedFile=null;
 function handleRestoreFile(input){
   restoreSelectedFile=(input && input.files && input.files[0]) ? input.files[0] : null;
   const btn=$("restoreBtn");
-  if(btn) btn.disabled=!restoreSelectedFile;
   if(restoreSelectedFile){
-    restoreStatus("📁 Backup selected: <b>"+esc(restoreSelectedFile.name)+"</b><br>ऊपर वाला <b>✅ OK — Restore Backup</b> button दबाएँ।",true);
+    if(btn){btn.style.display="block";btn.disabled=false;btn.removeAttribute("disabled");btn.style.pointerEvents="auto";}
+    restoreStatus("📁 Backup selected: <b>"+esc(restoreSelectedFile.name)+"</b><br>अब नीचे <b>✅ OK — Restore Backup</b> दबाएँ।",true);
   }else{
+    if(btn){btn.style.display="none";}
     restoreStatus("कोई backup file नहीं चुनी गई।",false);
   }
 }
-async function restoreBackupNow(){
+window.handleRestoreFile=handleRestoreFile;
+window.restoreBackupNow=async function restoreBackupNow(){
  const input=$("restoreFile");
  const f=restoreSelectedFile || (input && input.files && input.files[0]);
  if(!f){restoreStatus("पहले backup JSON file चुनें।",false);return;}
@@ -944,6 +967,9 @@ async function restoreBackupNow(){
    if(btn){btn.textContent="✅ OK — Restore Backup";btn.disabled=false;}
  }
 }
+// Extra explicit listener: keeps Restore reliable on iPhone Safari/iOS webview.
+const restoreBtnEl=$("restoreBtn");
+if(restoreBtnEl){restoreBtnEl.addEventListener("click",function(e){e.preventDefault();e.stopImmediatePropagation();restoreBackupNow();},{passive:false});}
 function csv(rows){return rows.map(r=>r.map(x=>`"${String(x??"").replaceAll('"','""')}"`).join(",")).join("\n")}
 function downloadText(name,text,type="text/csv"){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+text],{type}));a.download=name;a.click()}
 function exportCSV(){downloadText("daily.csv",csv([Object.keys(S.daily[0]||{date:"date"}),...S.daily.map(x=>Object.values(x))]));setTimeout(()=>downloadText("anc.csv",csv([Object.keys(S.anc[0]||{name:"name"}),...S.anc.map(x=>Object.values(x))])),200);setTimeout(()=>downloadText("medicine.csv",csv([["Medicine","Batch","Expiry","Qty","Used","Balance"],...S.med.map((m,i)=>[m.name,m.batch,m.expiry,m.qty,medUsed(i),m.qty-medUsed(i)])])),400);setTimeout(()=>downloadText("diagnostic.csv",csv([["Test","Batch","Expiry","Qty","Used","Balance"],...S.kits.map((k,i)=>[k.name,k.batch,k.expiry,k.qty,kitUsed(i),k.qty-kitUsed(i)])])),600)}
