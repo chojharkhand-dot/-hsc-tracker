@@ -274,7 +274,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
   <div class="field full">
    <label>Sub-Tola / Tola</label>
    <div id="vTolaRows"></div>
-   <button type="button" class="btn secondary full" id="addTolaBtn" style="margin-top:8px">➕ Add Tola</button>
+   <button type="button" class="btn secondary full" id="addTolaBtn" style="margin-top:8px;position:relative;z-index:9999;pointer-events:auto;touch-action:manipulation">➕ Add Tola</button>
    <div id="tolaTotalNote" class="muted" style="margin-top:8px">हर Tola का नाम और उसकी Population अलग-अलग भरें।</div>
   </div>
   <button class="btn full">💾 Save Village</button>
@@ -932,12 +932,19 @@ function villageTolaData(){
  })).filter(x=>x.name);
 }
 function addTolaRow(name="",population=""){
- const wrap=$("vTolaRows"); if(!wrap)return;
- const row=document.createElement("div"); row.className="tola-row"; row.style.cssText="display:grid;grid-template-columns:minmax(0,1fr) 120px 44px;gap:8px;margin:8px 0;align-items:center";
- row.innerHTML=`<input class="tola-name" placeholder="Tola का नाम" value="${esc(name)}"><input class="tola-pop" type="number" min="0" placeholder="Population" value="${population}"><button type="button" class="btn danger remove-tola" title="Remove">✕</button>`;
- row.querySelector(".remove-tola").onclick=()=>{row.remove();updateTolaTotal()};
+ const wrap=document.getElementById("vTolaRows");
+ if(!wrap)return false;
+ const row=document.createElement("div");
+ row.className="tola-row";
+ row.style.cssText="display:grid;grid-template-columns:minmax(0,1fr) 120px 44px;gap:8px;margin:8px 0;align-items:center";
+ row.innerHTML=`<input class="tola-name" placeholder="Tola का नाम"><input class="tola-pop" type="number" min="0" placeholder="Population"><button type="button" class="btn danger remove-tola" title="Remove">✕</button>`;
+ row.querySelector(".tola-name").value=name||"";
+ row.querySelector(".tola-pop").value=population||"";
+ row.querySelector(".remove-tola").onclick=function(){row.remove();updateTolaTotal()};
  row.querySelector(".tola-pop").oninput=updateTolaTotal;
- wrap.appendChild(row); updateTolaTotal();
+ wrap.appendChild(row);
+ updateTolaTotal();
+ return false;
 }
 function updateTolaTotal(){
  const total=villageTolaData().reduce((a,x)=>a+(+x.population||0),0), pop=+$("vpop").value||0;
@@ -1301,6 +1308,13 @@ function downloadText(name,text,type="text/csv"){let a=document.createElement("a
 function exportCSV(){downloadText("daily.csv",csv([Object.keys(S.daily[0]||{date:"date"}),...S.daily.map(x=>Object.values(x))]));setTimeout(()=>downloadText("anc.csv",csv([Object.keys(S.anc[0]||{name:"name"}),...S.anc.map(x=>Object.values(x))])),200);setTimeout(()=>downloadText("medicine.csv",csv([["Medicine","Batch","Expiry","Qty","Used","Balance"],...S.med.map((m,i)=>[m.name,m.batch,m.expiry,m.qty,medUsed(i),m.qty-medUsed(i)])])),400);setTimeout(()=>downloadText("diagnostic.csv",csv([["Test","Batch","Expiry","Qty","Used","Balance"],...S.kits.map((k,i)=>[k.name,k.batch,k.expiry,k.qty,kitUsed(i),k.qty-kitUsed(i)])])),600)}
 function resetData(){if(confirm("सारा data delete करना है?")){S=JSON.parse(JSON.stringify(defaultState));persist();alert("Data reset")}}
 render();
+(function(){
+ const b=document.getElementById("addTolaBtn");
+ if(b){
+   b.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();addTolaRow();},true);
+   b.addEventListener("touchend",function(e){e.preventDefault();e.stopPropagation();addTolaRow();},true);
+ }
+})();
 loadDailyDate();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
