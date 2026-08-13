@@ -54,6 +54,12 @@ body.report-print-mode > *:not(#printArea){display:none!important}
 body.report-print-mode #printArea{display:block!important;position:static!important;left:auto!important;top:auto!important;width:100%!important;background:#fff!important;padding:14px!important;color:#111!important}
 @media print{body.report-print-mode > *:not(#printArea){display:none!important} body.report-print-mode #printArea{display:block!important;position:static!important;left:auto!important;top:auto!important;width:100%!important}}
 </style>
+
+<style>
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-card{background:#fff;color:#111;border-radius:14px;max-width:720px;width:100%;max-height:90vh;overflow:auto;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.modal-card label{display:block;font-weight:600;margin:10px 0}.modal-card input,.modal-card textarea{display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;border:1px solid #ccc;border-radius:8px}
+</style>
 </head>
 <body>
 <header>
@@ -449,7 +455,85 @@ $("dd").onchange=loadDailyDate;
 
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.v));
 function n(id){return +$(id).value||0}
-function table(id,heads,rows){$(id).innerHTML=rows.length?"<tr>"+heads.map(h=>`<th>${h}</th>`).join("")+"</tr>"+rows.map(r=>"<tr>"+r.map(x=>`<td>${x??""}</td>`).join("")+"</tr>").join(""):`<tr><td colspan="${heads.length}" class="empty">कोई data नहीं</td></tr>`}
+const EDITABLE_TABLES={
+ dailyTable:"daily", medTable:"med", kitTable:"kits", actTable:"acts", patientTable:"patients",
+ ancTable:"anc", ncdTable:"patients", tbTable:"patients", riTable:"ri", deliveryTable:"deliveries",
+ villageTable:"villages", fpStockTable:"fpStock", fpReportTable:"fpTx", jasReportTable:"jasExpenses", jasHistoryTable:"jasMixed"
+};
+function cleanCell(v){return String(v??"").replace(/<[^>]*>/g,"").replace(/&nbsp;/g," ").trim()}
+function tableMatch(id,row,obj){
+ const vals=row.map(cleanCell).filter(v=>v!=="");
+ const candidates=Object.values(obj||{}).flatMap(v=>Array.isArray(v)?v.map(x=>String(x?.name??x??"")):[String(v??"")]);
+ const text=candidates.join(" ").toLowerCase();
+ const first=vals[0]?.toLowerCase()||"";
+ if(!first || !text.includes(first)) return false;
+ if(id==="medTable"||id==="kitTable"||id==="fpStockTable") return vals.slice(0,2).every(v=>text.includes(v.toLowerCase()));
+ if(id==="patientTable"||id==="ancTable"||id==="deliveryTable") return vals.slice(0,2).every(v=>text.includes(v.toLowerCase()));
+ if(id==="riTable"||id==="villageTable") return vals.slice(0,1).every(v=>text.includes(v.toLowerCase()));
+ if(id==="actTable"||id==="dailyTable") return vals.slice(0,2).every(v=>text.includes(v.toLowerCase()));
+ if(id==="fpReportTable") return vals.slice(0,4).some(v=>text.includes(v.toLowerCase()));
+ if(id==="jasReportTable") return String(obj.date||"")===vals[0] && (String(obj.bill||"")===vals[1] || String(obj.paidTo||"")===vals[2]);
+ return true;
+}
+function resolveTableRecord(id,row){
+ const key=EDITABLE_TABLES[id]; if(!key)return null;
+ if(key==="jasMixed"){
+   const type=cleanCell(row[1]), date=cleanCell(row[0]), detail=cleanCell(row[2]);
+   if(type==="Expense"){
+     const i=S.jasExpenses.findIndex(x=>String(x.date)===date && String(x.paidTo||"")===detail && String(x.total||"")===String(row[3]).replace(/[₹,]/g,""));
+     return i>=0?{key:"jasExpenses",index:i}:null;
+   }
+   const i=S.jasReceipts.findIndex(x=>String(x.date)===date && String(x.source||"")===detail);
+   return i>=0?{key:"jasReceipts",index:i}:null;
+ }
+ const arr=S[key]||[];
+ const index=arr.findIndex(obj=>tableMatch(id,row,obj));
+ return index>=0?{key,index}:null;
+}
+function openRecordEditor(key,index){
+ const obj=S[key]?.[index]; if(!obj)return;
+ const fields=Object.keys(obj);
+ let html=`<div class="modal-backdrop" id="recordEditor"><div class="modal-card"><h2>✏️ Edit Data</h2><p class="muted">बदला हुआ data Save करने पर उसी entry में update होगा।</p><div id="recordFields">`;
+ fields.forEach(k=>{
+   const v=obj[k];
+   if(Array.isArray(v)|| (v&&typeof v==="object")){
+     html+=`<label>${esc(k)}<textarea data-edit-key="${esc(k)}" rows="3">${esc(JSON.stringify(v))}</textarea></label>`;
+   }else{
+     const type=typeof v==="number"?"number":"text";
+     html+=`<label>${esc(k)}<input type="${type}" data-edit-key="${esc(k)}" value="${esc(v)}"></label>`;
+   }
+ });
+ html+=`</div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn" onclick="saveRecordEdit('${esc(key)}',${index})">💾 Update</button><button class="btn secondary" onclick="closeRecordEditor()">Cancel</button></div></div></div>`;
+ const holder=document.createElement("div");holder.innerHTML=html;document.body.appendChild(holder.firstElementChild);
+}
+function closeRecordEditor(){document.getElementById("recordEditor")?.remove()}
+function saveRecordEdit(key,index){
+ const obj=S[key]?.[index]; if(!obj)return;
+ document.querySelectorAll("#recordEditor [data-edit-key]").forEach(el=>{
+   const k=el.dataset.editKey;
+   if(Array.isArray(obj[k]) || (obj[k]&&typeof obj[k]==="object")){
+     try{obj[k]=JSON.parse(el.value)}catch(e){alert("Invalid JSON in "+k);return}
+   }else if(typeof obj[k]==="number") obj[k]=Number(el.value)||0;
+   else obj[k]=el.value;
+ });
+ persist();closeRecordEditor();alert("Data updated successfully");
+}
+function deleteRecord(key,index){
+ const obj=S[key]?.[index]; if(!obj)return;
+ const label=obj.name||obj.date||obj.bill||obj.paidTo||"this entry";
+ if(!confirm(`क्या आप "${label}" का data delete करना चाहते हैं?`))return;
+ S[key].splice(index,1);persist();alert("Data deleted");
+}
+function table(id,heads,rows){
+ const editable=!!EDITABLE_TABLES[id];
+ const h=editable?[...heads,"Action"]:heads;
+ if(!rows.length){$(id).innerHTML=`<tr><td colspan="${h.length}" class="empty">कोई data नहीं</td></tr>`;return}
+ $(id).innerHTML="<tr>"+h.map(x=>`<th>${x}</th>`).join("")+"</tr>"+rows.map(r=>{
+   const rec=editable?resolveTableRecord(id,r):null;
+   const action=editable&&rec?`<button class="btn small secondary" onclick="openRecordEditor('${rec.key}',${rec.index})">✏️ Edit</button> <button class="btn small danger" onclick="deleteRecord('${rec.key}',${rec.index})">🗑️ Delete</button>`:"";
+   return "<tr>"+r.map(x=>`<td>${x??""}</td>`).join("")+(editable?`<td style="white-space:nowrap">${action||"—"}</td>`:"")+"</tr>";
+ }).join("");
+}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 
 const dailyKeys=["opd","male","female","age05","age618","age1930","age3145","age4659","age60","ncd","htn","dm","tb","malaria","ancCount","pnc","hbnc","tele","referral","wellness","camp","fieldvisit","meeting","ri","leave"];
