@@ -1079,20 +1079,25 @@ $("bulkPreview").onclick=async()=>{
 let previewHeaders, previewData;
 if(ncdRows.length){
   previewHeaders=["Module","Name","Father / Spouse","Age","Sex","Village","Mobile","ABHA","HTN","DM","HTN Start","DM Start","HTN Status","DM Status","Next Follow-up","Status"];
+  const exact=(r,k)=>Object.prototype.hasOwnProperty.call(r,k)?r[k]:"";
+  const fullName=(r)=>{
+    const parts=[exact(r,"First Name"),exact(r,"Middle Name"),exact(r,"Last Name")].map(x=>String(x||"").trim()).filter(Boolean);
+    return parts.join(" ") || String(r.__name||"").trim();
+  };
   previewData=bulkRows.slice(0,100).map(r=>{
-    const hs=String(rowVal(r,["HTN_Treatment_Start_Date","HTN Treatment Start Date","HTN Start Date"])||"").trim();
-    const hst=String(rowVal(r,["HTN_Treatment_Status","HTN Treatment Status"])||"").trim();
-    const ds=String(rowVal(r,["Diabetes_Treatment_Start_Date","DM_Treatment_Start_Date","Diabetes Treatment Start Date","DM Treatment Start Date"])||"").trim();
-    const dst=String(rowVal(r,["DM_Treatment_Status","Diabetes_Treatment_Status","DM Treatment Status","Diabetes Treatment Status"])||"").trim();
+    const hs=String(exact(r,"HTN_Treatment_Start_Date")||"").trim();
+    const hst=String(exact(r,"HTN_Treatment_Status")||"").trim();
+    const ds=String(exact(r,"Diabetes_Treatment_Start_Date")||"").trim();
+    const dst=String(exact(r,"DM_Treatment_Status")||"").trim();
     const hasH=!!(hs||hst), hasD=!!(ds||dst);
+    const guardian=exact(r,"Father/Spouse")||exact(r,"Father / Spouse")||exact(r,"Father Name")||exact(r,"Spouse Name")||exact(r,"Guardian Name")||"";
     return [
-      r.__module,r.__name,
-      rowVal(r,["Father/Spouse","Father / Spouse","Father Name","Spouse Name","Father/Guardian","Guardian Name","Father or Spouse"]),
-      rowVal(r,["Age"]),rowVal(r,["Sex","Gender"]),rowVal(r,["Village"]),
-      rowVal(r,["Mobile","Mobile #","Mobile No","Mobile Number","Phone","Contact Number"]),
-      rowVal(r,["ABHA ID","ABHA","ABHA Number","ABHA No","ABHA No."]),
+      r.__module,fullName(r),guardian,
+      exact(r,"Age"),exact(r,"Sex"),exact(r,"Village"),
+      exact(r,"Mobile #")||exact(r,"Mobile")||exact(r,"Mobile Number"),
+      exact(r,"ABHA Number")||exact(r,"ABHA ID")||exact(r,"ABHA"),
       hasH?"Yes":"No",hasD?"Yes":"No",hs,ds,hst,dst,
-      rowVal(r,["Next Follow-up","Next Visit"]),
+      exact(r,"Next Follow-up")||exact(r,"Next Visit"),
       r.__duplicate?"Duplicate in file":(!r.__name?"Missing name":"Ready")
     ];
   });
