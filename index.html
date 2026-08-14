@@ -319,7 +319,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 <section id="ncdPage" class="view">
 <div class="section"><h2>❤️ NCD Follow-up</h2><span class="muted">HTN / Diabetes treatment, values and follow-up</span></div>
 <div class="card"><form id="ncdForm">
-<div class="field"><label>Patient Name</label><input id="nname" required></div><div class="field"><label>Age</label><input type="number" id="nage"></div>
+<div class="field"><label>Patient Name</label><input id="nname" required></div><div class="field"><label>Father / Spouse Name</label><input id="nguardian"></div><div class="field"><label>Age</label><input type="number" id="nage"></div>
 <div class="field"><label>Sex</label><select id="nsex"><option>Female</option><option>Male</option><option>Other</option></select></div><div class="field"><label>Village</label><input id="nvillage"></div>
 <div class="field"><label>Tola</label><input id="ntola"></div><div class="field"><label>Mobile</label><input id="nmobile"></div><div class="field"><label>ABHA ID</label><input id="nabha"></div><div class="field"><label>Aadhaar No.</label><input id="naadhaar"></div>
 <div class="field"><label>Diagnosis</label><select id="ndiag"><option>HTN</option><option>Diabetes</option><option>HTN + Diabetes</option><option>Other NCD</option></select></div><div class="field"><label>Treatment Start</label><input type="date" id="nstart"></div>
@@ -353,7 +353,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
  <div class="card">
   <div class="field"><label>Module (अगर Excel में Module column नहीं है)</label><select id="bulkModule"><option value="auto">Auto detect from Module column</option><option value="patient">OPD / Patient</option><option value="anc">ANC / HRP</option><option value="tb">TB Patient</option><option value="ncd">NCD Patient</option><option value="nischay">Nischay</option><option value="medicine">Medicine Stock</option><option value="diagnostic">Diagnostic Stock</option><option value="delivery">Delivery / Baby</option><option value="daily">Daily Report</option></select></div>
   <div class="field full"><label>Excel / CSV File</label><input type="file" id="bulkFile" accept=".xlsx,.xls,.csv"></div>
-  <div class="muted">Suggested columns: Module, Name, Village, Tola, Mobile, ABHA ID, Aadhaar, Date, LMP, EDD, ANC Visit, HRP, Hb, BP, Next Follow-up, Nischay ID, Diagnosis, Medicine, Batch, Mfg, Expiry, Quantity.</div>
+  <div class="muted">Supported columns: Module, Name/First Name/Middle Name/Last Name, Father/Spouse Name, Village, Tola, Mobile/Mobile #, ABHA ID/ABHA Number, Aadhaar, Age, Sex, HTN_Treatment_Start_Date, HTN_Treatment_Status, Diabetes_Treatment_Start_Date, DM_Treatment_Status, Diagnosis, Medicine, Next Follow-up, plus stock/report columns.</div>
   <button type="button" class="btn" id="bulkPreview">🔎 Preview</button>
   <button type="button" class="btn secondary" id="bulkImport" disabled>⬇️ Import All</button><button type="button" class="btn secondary" id="bulkTemplate">📄 Download Template</button>
  </div>
@@ -692,7 +692,7 @@ $("dailyForm").onsubmit=e=>{
 
 $("pform").onsubmit=e=>{e.preventDefault();S.patients.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:$("pdate").value,name:$("pname").value,guardian:$("pguardian").value,age:n("page"),sex:$("psex").value,village:$("pvillage").value,tola:$("ptola").value,mobile:$("pmobile").value,abhaid:$("pabhaid").value,aadhaar:$("paadhaar").value,nischay:$("pnischay").value,complaint:$("pcomplaint").value,diagnosis:$("pdiagnosis").value,weight:$("pweight").value,height:$("pheight").value,bp:$("pbp").value,rbs:$("prbs").value,condition:$("pcondition").value,med:$("pmed").value,meddose:$("pmeddose").value,ref:$("pref").value,abha:$("pabha").value,treatmentStart:$("ptreatstart").value,treatmentEnd:$("ptreatend").value,medDurationDays:+($("pmeddays").value||0),next:$("pnext2").value||$("pnext").value,ncd:$("pncd").value,followstatus:$("pfollowstatus").value,remark:$("premark").value});persist();e.target.reset();$("pdate").value=today;alert("Patient saved")};
 
-$("ncdForm").onsubmit=e=>{e.preventDefault();S.patients.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:today,name:$("nname").value,age:n("nage"),sex:$("nsex").value,village:$("nvillage").value,tola:$("ntola").value,mobile:$("nmobile").value,abhaid:$("nabha").value,aadhaar:$("naadhaar").value,condition:$("ndiag").value,ncd:$("ndiag").value,treatmentStart:$("nstart").value,bp:$("nbp").value,rbs:$("nrbs").value,weight:$("nweight").value,med:$("nmed").value,next:$("nnext").value,adherence:$("nadherence").value,remark:$("nremark").value});persist();e.target.reset();alert("NCD follow-up saved")};
+$("ncdForm").onsubmit=e=>{e.preventDefault();S.patients.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:today,name:$("nname").value,guardian:$("nguardian").value,age:n("nage"),sex:$("nsex").value,village:$("nvillage").value,tola:$("ntola").value,mobile:$("nmobile").value,abhaid:$("nabha").value,aadhaar:$("naadhaar").value,condition:$("ndiag").value,ncd:$("ndiag").value,treatmentStart:$("nstart").value,bp:$("nbp").value,rbs:$("nrbs").value,weight:$("nweight").value,med:$("nmed").value,next:$("nnext").value,adherence:$("nadherence").value,remark:$("nremark").value});persist();e.target.reset();alert("NCD follow-up saved")};
 function renderNCD(){let a=S.patients.filter(x=>x.ncd&&x.ncd!=="No");table("ncdTable",["Name","Village","Diagnosis","BP","Sugar","Medicine","Next FU","Risk"],a.slice().reverse().map(x=>[`<span class="profile-link" onclick="showPatientProfile(${S.patients.indexOf(x)})">${esc(x.name)}</span>`,x.village,x.ncd,x.bp,x.rbs,x.med,x.next,(x.bp&&/^(1[4-9]|[2-9]\d)/.test(String(x.bp))||(+x.rbs>=200))?"🔴 Risk":"Normal"]));}
 $("tbForm").onsubmit=e=>{e.preventDefault();S.patients.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:today,name:$("tbname").value,age:n("tbage"),sex:$("tbsex").value,village:$("tbvillage").value,tola:$("tbtola").value,mobile:$("tbmobile").value,nischay:$("tbid").value,condition:"TB",tbType:$("tbtype").value,treatmentStart:$("tbstart").value,med:$("tbmed").value,meddose:$("tbdose").value,tbPhase:$("tbphase").value,weight:$("tbweight").value,next:$("tbnext").value,treatmentEnd:$("tbend").value,adherence:$("tbadherence").value,remark:$("tbremark").value});persist();e.target.reset();alert("TB record saved")};
 function renderTB(){let a=S.patients.filter(x=>/TB/i.test(x.condition||""));table("tbTable",["Name","Village","TB Type","Phase","Medicine","Weight","Next FU","End","Adherence"],a.slice().reverse().map(x=>[`<span class="profile-link" onclick="showPatientProfile(${S.patients.indexOf(x)})">${esc(x.name)}</span>`,x.village,x.tbType||"",x.tbPhase||"",x.med||"",x.weight||"",x.next||"",x.treatmentEnd||"",x.adherence||""]));}
@@ -810,7 +810,7 @@ function medUsed(i,from="",to=""){return S.meduse.filter(x=>x.med===i&&(!from||x
 function kitUsed(i,from="",to=""){return S.kituse.filter(x=>x.kit===i&&(!from||x.date>=from)&&(!to||x.date<=to)).reduce((a,x)=>a+x.qty,0)}
 
 function renderPatient(){let q=($("psearch").value||"").toLowerCase();let a=S.patients.filter(x=>[x.name,x.village,x.condition,x.mobile,x.abhaid,x.nischay].join(" ").toLowerCase().includes(q));table("patientTable",["Date","Name","Village","Age","Sex","Diagnosis","BP","RBS","NCD/TB","Next FU","ABHA","Profile"],a.slice().reverse().map((x,ri)=>[x.date,`<span class="profile-link" onclick="showPatientProfile(${S.patients.indexOf(x)})">${esc(x.name)}</span>`,esc(x.village),x.age,x.sex,esc(x.condition||x.diagnosis),x.bp,x.rbs,esc(x.ncd||""),x.next||"",esc(x.abhaid||x.abha||""),`<button class="btn small secondary" onclick="showPatientProfile(${S.patients.indexOf(x)})">Open</button>`]))}
-function showPatientProfile(i){let x=S.patients[i];if(!x)return;let history=S.patients.filter(p=>String(p.name).toLowerCase()===String(x.name).toLowerCase());let anc=S.anc.filter(a=>String(a.name).toLowerCase()===String(x.name).toLowerCase());let med=(x.med||"").split(",").join("<br>");let msg=`<h2>${esc(x.name)}</h2><p><b>Village/Tola:</b> ${esc(x.village||"")} / ${esc(x.tola||"")}</p><p><b>Mobile:</b> ${esc(x.mobile||"-")} &nbsp; <b>ABHA:</b> ${esc(x.abhaid||x.abha||"-")} &nbsp; <b>Aadhaar:</b> ${esc(x.aadhaar||"-")} &nbsp; <b>Nischay:</b> ${esc(x.nischay||"-")}</p><p><b>Condition:</b> ${esc(x.condition||x.ncd||"-")} &nbsp; <b>Treatment start:</b> ${esc(x.treatmentStart||"-")} &nbsp; <b>Treatment end:</b> ${esc(x.treatmentEnd||"-")}</p><p><b>BP:</b> ${esc(x.bp||"-")} &nbsp; <b>RBS:</b> ${esc(x.rbs||"-")} &nbsp; <b>Weight:</b> ${esc(x.weight||"-")}</p><p><b>Medicine:</b> ${med||"-"}</p><p><b>Next follow-up:</b> <span class="tag red">${esc(x.next||"Not set")}</span></p><hr><h3>Visit history</h3>${history.map(h=>`<div class="card"><b>${esc(h.date||"")}</b> • ${esc(h.condition||"OPD")} • BP ${esc(h.bp||"-")} • RBS ${esc(h.rbs||"-")} • ${esc(h.remark||"")}</div>`).join("")}<h3>ANC history</h3>${anc.map(a=>`<div class="card">${esc(a.stage)} • LMP ${esc(a.lmp)} • EDD ${esc(a.edd)} • HRP ${esc(a.hrp)} • Hb ${esc(a.hb||"-")} • Next ${esc(a.next||"-")}</div>`).join("")||"<span class='muted'>No ANC record linked.</span>"}`;let modal=document.getElementById("profileModal");if(!modal){modal=document.createElement("div");modal.id="profileModal";modal.style.cssText="position:fixed;inset:0;background:#0008;z-index:100;overflow:auto;padding:20px";document.body.appendChild(modal)}modal.innerHTML=`<div class="card" style="max-width:900px;margin:20px auto"><button class="btn red" onclick="document.getElementById('profileModal').remove()">Close</button>${msg}</div>`}
+function showPatientProfile(i){let x=S.patients[i];if(!x)return;let history=S.patients.filter(p=>String(p.name).toLowerCase()===String(x.name).toLowerCase());let anc=S.anc.filter(a=>String(a.name).toLowerCase()===String(x.name).toLowerCase());let med=(x.med||"").split(",").join("<br>");let msg=`<h2>${esc(x.name)}</h2><p><b>Village/Tola:</b> ${esc(x.village||"")} / ${esc(x.tola||"")}</p><p><b>Father/Spouse:</b> ${esc(x.guardian||"-")}</p><p><b>Mobile:</b> ${esc(x.mobile||"-")} &nbsp; <b>ABHA:</b> ${esc(x.abhaid||x.abha||"-")} &nbsp; <b>Aadhaar:</b> ${esc(x.aadhaar||"-")} &nbsp; <b>Nischay:</b> ${esc(x.nischay||"-")}</p><p><b>Condition:</b> ${esc(x.condition||x.ncd||"-")} &nbsp; <b>Treatment start:</b> ${esc(x.treatmentStart||"-")} &nbsp; <b>Treatment end:</b> ${esc(x.treatmentEnd||"-")}</p><p><b>BP:</b> ${esc(x.bp||"-")} &nbsp; <b>RBS:</b> ${esc(x.rbs||"-")} &nbsp; <b>Weight:</b> ${esc(x.weight||"-")}</p><p><b>Medicine:</b> ${med||"-"}</p><p><b>Next follow-up:</b> <span class="tag red">${esc(x.next||"Not set")}</span></p><hr><h3>Visit history</h3>${history.map(h=>`<div class="card"><b>${esc(h.date||"")}</b> • ${esc(h.condition||"OPD")} • BP ${esc(h.bp||"-")} • RBS ${esc(h.rbs||"-")} • ${esc(h.remark||"")}</div>`).join("")}<h3>ANC history</h3>${anc.map(a=>`<div class="card">${esc(a.stage)} • LMP ${esc(a.lmp)} • EDD ${esc(a.edd)} • HRP ${esc(a.hrp)} • Hb ${esc(a.hb||"-")} • Next ${esc(a.next||"-")}</div>`).join("")||"<span class='muted'>No ANC record linked.</span>"}`;let modal=document.getElementById("profileModal");if(!modal){modal=document.createElement("div");modal.id="profileModal";modal.style.cssText="position:fixed;inset:0;background:#0008;z-index:100;overflow:auto;padding:20px";document.body.appendChild(modal)}modal.innerHTML=`<div class="card" style="max-width:900px;margin:20px auto"><button class="btn red" onclick="document.getElementById('profileModal').remove()">Close</button>${msg}</div>`}
 
 function renderANC(){let q=($("asearch").value||"").toLowerCase();let a=S.anc.filter(x=>[x.name,x.village].join(" ").toLowerCase().includes(q));table("ancTable",["Name","Village","Age","LMP","EDD","Visit","HRP","Reason","Next Visit","Blood","IFA","Calcium"],a.slice().reverse().map(x=>[x.name,x.village,x.age,x.lmp,x.edd,x.stage,x.hrp==="Yes"?'<span class="tag red">HRP</span>':"No",x.reason,x.next,x.blood,x.ifa,x.calcium]))}
 
@@ -1054,10 +1054,21 @@ function rowVal(r,keys){for(let k of keys){let nk=normalizeKey(k);for(let rk of 
 $("bulkTemplate").onclick=()=>{let heads=["Module","Name","Village","Tola","Mobile","ABHA ID","Aadhaar","Date","LMP","EDD","ANC Visit","HRP","HRP Reason","Hb","BP","Next Follow-up","Nischay ID","Diagnosis","NCD","Medicine","Dose","Batch","Mfg Date","Expiry Date","Quantity","Unit","Test"];downloadText("HSC_Bulk_Import_Template.csv",csv([heads,["ANC","Example Woman","Kedwa","Main Tola","","","","",today,"", "ANC 1","No","","11","","", "", "", "", "", "", "", "", "", "", ""]]),"text/csv")};
 function parseBulkRows(rows){
  let chosen=$("bulkModule").value, out=[];
- rows.forEach(r=>{let module=String(rowVal(r,["Module","Type","Section"])||chosen||"auto").toLowerCase();if(module==="auto")module=String(rowVal(r,["Module","Type","Section"])).toLowerCase();
- let name=rowVal(r,["Name","Patient Name","Medicine Name","Test","Mother Name"]);
- if(!module||module==="auto") {if(rowVal(r,["LMP","EDD","ANC Visit"]))module="anc";else if(rowVal(r,["Batch No","Batch","Mfg Date","Expiry Date"])&&rowVal(r,["Medicine Name"]))module="medicine";else if(rowVal(r,["Nischay ID"]))module="nischay";else if(String(rowVal(r,["Diagnosis","Condition"])).toLowerCase().includes("tb"))module="tb";else module="patient";}
- out.push({...r,__module:module,__name:name});});
+ rows.forEach(r=>{
+  let module=String(rowVal(r,["Module","Type","Section"])||chosen||"auto").trim().toLowerCase();
+  if(module==="auto")module=String(rowVal(r,["Module","Type","Section"])||"").trim().toLowerCase();
+  let name=rowVal(r,["Name","Patient Name","Medicine Name","Test","Mother Name","First Name"]);
+  if(!module||module==="auto"){
+    if(rowVal(r,["LMP","EDD","ANC Visit"]))module="anc";
+    else if(rowVal(r,["Batch No","Batch","Mfg Date","Expiry Date"])&&rowVal(r,["Medicine Name"]))module="medicine";
+    else if(rowVal(r,["Nischay ID"]))module="nischay";
+    else if(rowVal(r,["NCD","HTN_Treatment_Start_Date","Diabetes_Treatment_Start_Date","HTN_Treatment_Status","DM_Treatment_Status","Hypertension_Control","Diabetes_Control"]))module="ncd";
+    else if(String(rowVal(r,["Diagnosis","Condition"])).toLowerCase().includes("tb"))module="tb";
+    else module="patient";
+  }
+  if(module.includes("under treatment") || module.includes("under-treatment") || module==="treatment" || module==="ncd treatment")module="ncd";
+  out.push({...r,__module:module,__name:name});
+ });
  return out;
 }
 let bulkRows=[];
@@ -1100,9 +1111,46 @@ $("bulkImport").onclick=()=>{
    S.anc.push({date,name:nm,village:v,tola:rowVal(r,["Tola"]),age:rowVal(r,["Age"]),mobile:rowVal(r,["Mobile"]),lmp,edd:ed,stage:rowVal(r,["ANC Visit","Visit"])||"ANC 1",hrp:String(rowVal(r,["HRP"])).toLowerCase()==="yes"?"Yes":"No",reason:rowVal(r,["HRP Reason","Reason"]),next:parseDate(rowVal(r,["Next Follow-up","Next Visit"])),blood:rowVal(r,["Blood Group"]),hb:rowVal(r,["Hb"]),bp:rowVal(r,["BP"]),ifa:rowVal(r,["IFA"]),calcium:rowVal(r,["Calcium"]),nischay:rowVal(r,["Nischay ID"])});
   }
   else {
-   let condition=String(rowVal(r,["Diagnosis","Condition"])||""), ncd=mod==="ncd"?rowVal(r,["NCD"])||"HTN/DM":"";
-   if(exists(S.patients,x=>String(x.name).toLowerCase()===String(nm).toLowerCase()&&String(x.mobile||"")===String(rowVal(r,["Mobile"])||""))){skipped++;return;}
-   S.patients.push({date,name:nm,village:v,tola:rowVal(r,["Tola"]),age:rowVal(r,["Age"]),sex:rowVal(r,["Sex","Gender"]),mobile:rowVal(r,["Mobile"]),abhaid:rowVal(r,["ABHA ID","ABHA"]),aadhaar:rowVal(r,["Aadhaar"]),nischay:rowVal(r,["Nischay ID"]),condition:condition||mod,diagnosis:condition,med:rowVal(r,["Medicine","Treatment"]),meddose:rowVal(r,["Dose"]),bp:rowVal(r,["BP"]),rbs:rowVal(r,["RBS"]),next:parseDate(rowVal(r,["Next Follow-up","Next Visit"])),ncd,remark:"Bulk Import"});
+   const htnStart=String(rowVal(r,["HTN_Treatment_Start_Date","HTN Treatment Start Date","HTN Start Date"])||"").trim();
+   const htnStatus=String(rowVal(r,["HTN_Treatment_Status","HTN Treatment Status"])||"").trim();
+   const dmStart=String(rowVal(r,["Diabetes_Treatment_Start_Date","DM_Treatment_Start_Date","Diabetes Treatment Start Date","DM Treatment Start Date"])||"").trim();
+   const dmStatus=String(rowVal(r,["DM_Treatment_Status","Diabetes_Treatment_Status","DM Treatment Status","Diabetes Treatment Status"])||"").trim();
+   const hasHTN=!!(htnStart||htnStatus);
+   const hasDM=!!(dmStart||dmStatus);
+   let ncdRaw=String(rowVal(r,["NCD","NCD Type","Diagnosis","Condition"])||"").trim();
+   let ncd="";
+   if(mod==="ncd" || hasHTN || hasDM || /HTN|Hypertension|Diabet|DM/i.test(ncdRaw)){
+      if(hasHTN && hasDM)ncd="HTN + Diabetes";
+      else if(hasHTN)ncd="HTN";
+      else if(hasDM)ncd="Diabetes";
+      else if(/HTN|Hypertension/i.test(ncdRaw) && /Diabet|DM/i.test(ncdRaw))ncd="HTN + Diabetes";
+      else if(/HTN|Hypertension/i.test(ncdRaw))ncd="HTN";
+      else if(/Diabet|DM/i.test(ncdRaw))ncd="Diabetes";
+      else ncd=ncdRaw||"Other NCD";
+   }
+   let condition=String(rowVal(r,["Diagnosis","Condition"])||"").trim() || ncd || mod;
+   const mobile=String(rowVal(r,["Mobile","Mobile #","Mobile No","Mobile Number","Phone","Contact Number"])||"").trim();
+   const abha=String(rowVal(r,["ABHA ID","ABHA","ABHA Number","ABHA No","ABHA No."])||"").trim();
+   const guardian=String(rowVal(r,["Father/Spouse","Father / Spouse","Father Name","Spouse Name","Father/Guardian","Guardian Name","Father or Spouse"])||"").trim();
+   const first=String(rowVal(r,["First Name"])||"").trim();
+   const middle=String(rowVal(r,["Middle Name"])||"").trim();
+   const last=String(rowVal(r,["Last Name"])||"").trim();
+   if((!nm||nm===first) && (middle||last)) nm=[first,middle,last].filter(Boolean).join(" ");
+   if(exists(S.patients,x=>String(x.name).toLowerCase()===String(nm).toLowerCase()&&mobile&&String(x.mobile||"")===mobile)){skipped++;return;}
+   S.patients.push({
+     id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+count),
+     date,name:nm,village:v,tola:rowVal(r,["Tola"]),
+     guardian,age:rowVal(r,["Age"]),sex:rowVal(r,["Sex","Gender"]),
+     mobile,abhaid:abha,aadhaar:rowVal(r,["Aadhaar","Aadhaar No","Aadhaar No."]),
+     nischay:rowVal(r,["Nischay ID"]),condition,diagnosis:condition,
+     med:rowVal(r,["Medicine","Treatment"]),meddose:rowVal(r,["Dose"]),
+     bp:rowVal(r,["BP"]),rbs:rowVal(r,["RBS","FBS","PPBS"]),
+     next:parseDate(rowVal(r,["Next Follow-up","Next Visit"])),
+     treatmentStart:parseDate(htnStart||dmStart||rowVal(r,["Treatment Start","Treatment Start Date"])),
+     htnTreatmentStart:parseDate(htnStart),
+     htnStatus,dmTreatmentStart:parseDate(dmStart),dmStatus,
+     ncd:ncd,remark:"Bulk Import"
+   });
   }
   count++;
  });
