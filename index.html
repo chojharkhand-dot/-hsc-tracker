@@ -65,7 +65,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 <header>
  <div class="head"><div><div class="title">🏥 HSC Tracker</div><div class="sub">Daily • Monthly • Patient • ANC • Stock • Activities • Reports</div></div><div id="clock"></div></div>
  <nav id="nav">
-  <button class="active" data-v="dashboard">Dashboard</button><button data-v="daily">Daily</button><button data-v="patient">OPD/Patient</button><button data-v="anc">ANC/HRP</button><button data-v="ncd">❤️ NCD</button><button data-v="tb">🫁 TB</button><button data-v="medicine">Medicine</button><button data-v="fpsupply">🟣 FP & Sahiya Supply</button><button data-v="diagnostic">Diagnostic</button><button data-v="activity">Activities</button><button data-v="jas">💰 JAS</button><button data-v="report">Reports</button><button data-v="alerts">🔔 Alerts</button><button data-v="village">🏘️ Village/Tola</button><button data-v="ri">💉 RI Schedule</button><button data-v="delivery">👶 Delivery/HBNC</button><button data-v="bulk">📥 Bulk Import</button><button data-v="backup">Backup/Settings</button>
+  <button class="active" data-v="dashboard">Dashboard</button><button data-v="daily">Daily</button><button data-v="patient">OPD/Patient</button><button data-v="anc">ANC/HRP</button><button data-v="ncd">❤️ NCD</button><button data-v="referral">🔴 Referral</button><button data-v="tb">🫁 TB</button><button data-v="medicine">Medicine</button><button data-v="fpsupply">🟣 FP & Sahiya Supply</button><button data-v="diagnostic">Diagnostic</button><button data-v="activity">Activities</button><button data-v="jas">💰 JAS</button><button data-v="report">Reports</button><button data-v="alerts">🔔 Alerts</button><button data-v="village">🏘️ Village/Tola</button><button data-v="ri">💉 RI Schedule</button><button data-v="delivery">👶 Delivery/HBNC</button><button data-v="bulk">📥 Bulk Import</button><button data-v="backup">Backup/Settings</button>
  </nav>
 </header>
 <main>
@@ -328,6 +328,40 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 <div class="field full"><label>Remarks / Risk</label><textarea id="nremark"></textarea></div><button class="btn full">💾 Save NCD Follow-up</button>
 </form></div><div class="section"><h2>NCD Patient History</h2></div><div class="tablewrap"><table class="table" id="ncdTable"></table></div></section>
 
+
+<section id="referralPage" class="view">
+<div class="section"><h2>🔴 Referral & Follow-up Tracking</h2><span class="muted">Referral + multiple follow-ups + outcome tracking</span></div>
+<div class="card"><form id="referralForm">
+<div class="field"><label>Referral Date</label><input type="date" id="rfDate" required></div>
+<div class="field"><label>Referral Time</label><input type="time" id="rfTime" required></div>
+<div class="field"><label>Patient Name</label><input id="rfName" required></div>
+<div class="field"><label>Father / Spouse Name</label><input id="rfGuardian"></div>
+<div class="field"><label>Age</label><input type="number" id="rfAge"></div>
+<div class="field"><label>Sex</label><select id="rfSex"><option>Female</option><option>Male</option><option>Other</option></select></div>
+<div class="field"><label>Village</label><input id="rfVillage"></div>
+<div class="field"><label>Tola</label><input id="rfTola"></div>
+<div class="field"><label>Mobile</label><input id="rfMobile"></div>
+<div class="field"><label>ABHA</label><input id="rfAbha"></div>
+<div class="field"><label>Referral Type / Follow-up Need</label><select id="rfType"><option>NCD</option><option>TB</option><option>HRP</option><option>Delivery</option><option>ANC</option><option>PNC</option><option>HBNC</option><option>Investigation</option><option>Referral</option><option>Other</option></select></div>
+<div class="field"><label>Referred To / Facility</label><input id="rfFacility"></div>
+<div class="field full"><label>Referral Reason</label><textarea id="rfReason" required></textarea></div>
+<div class="field full"><label>Referral Remarks</label><textarea id="rfRemark"></textarea></div>
+<button class="btn full">💾 Save Referral</button>
+</form></div>
+
+<div class="section"><h2>📌 Referral Report</h2></div>
+<div class="card">
+<div class="grid">
+<div class="field"><label>Report Period</label><select id="rfReportMode"><option value="all">All Time</option><option value="day">Day</option><option value="month">Month</option><option value="year">Year</option></select></div>
+<div class="field" id="rfReportDateWrap"><label>Date</label><input type="date" id="rfReportDate"></div>
+<div class="field" id="rfReportMonthWrap"><label>Month</label><input type="month" id="rfReportMonth"></div>
+<div class="field" id="rfReportYearWrap"><label>Year</label><input type="number" id="rfReportYear" min="2000" max="2100"></div>
+</div>
+<div class="grid" id="rfCards"></div>
+</div>
+<div class="tablewrap"><table class="table" id="referralTable"></table></div>
+</section>
+
 <section id="tbPage" class="view">
 <div class="section"><h2>🫁 TB Patient Tracking</h2><span class="muted">Treatment, regimen, follow-up and expected completion</span></div>
 <div class="card"><form id="tbForm">
@@ -381,7 +415,7 @@ $("clock").textContent=new Date().toLocaleDateString("hi-IN",{day:"2-digit",mont
 $("dashDate").textContent=new Date().toLocaleDateString("hi-IN",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
 ["dd","pdate","actdate","mrec","musedate","krec","kusedate"].forEach(id=>$(id).value=today); $("rmonth").value=""; $("rdate").value=""; $("rmode").value="all";
 
-const defaultState={daily:[],patients:[],anc:[],med:[],meduse:[],kits:[],kituse:[],acts:[],villages:[],ri:[],deliveries:[],fpStock:[],fpTx:[],jasReceipts:[],jasExpenses:[]};
+const defaultState={daily:[],patients:[],anc:[],med:[],meduse:[],kits:[],kituse:[],acts:[],villages:[],ri:[],deliveries:[],fpStock:[],fpTx:[],jasReceipts:[],jasExpenses:[],referrals:[]};
 const EXCEL_MEDICINE_STOCK=[{"name": "Amoxycillin Oral Suspension IP 125 mg/5 ml (Ceemox)", "batch": "ADBS1058", "mfg": "2025-09-01", "expiry": "2027-02-01", "qty": 17, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Chloroquine Phosphate Oral Suspension IP 50 mg/5 ml", "batch": "L24/0412A", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 29, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Diphenhydramine Hydrochloride, Ammonium Chloride & Sodium Citrate Syrup (Cough Syrup)", "batch": "CEKS24042", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 43, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Oral Suspension IP", "batch": "L24/0407A", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 16, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Mefenamic Acid Oral Suspension", "batch": "JDL-3497", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 33, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin & Metronidazole Suspension (TOFF-M)", "batch": "MLS25283", "mfg": "2025-04-01", "expiry": "2027-03-01", "qty": 4, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Paracetamol Paediatric Suspension IP 125 mg (BIOCETAMOL-125, 60 ml)", "batch": "SPA251556", "mfg": "2025-08-01", "expiry": "2027-07-01", "qty": 80, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Albendazole Tablets IP", "batch": "CQU02ACA", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 76, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Allopurinol Tablets IP 100 mg (CGNOL-100)", "batch": "CT24251163B", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Amlodipine Tablets IP 5 mg", "batch": "SPAC26005", "mfg": "2026-01-01", "expiry": "2027-12-01", "qty": 400, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Amoxycillin Capsules IP 250 mg", "batch": "4172006", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 200, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ampicillin Injection IP 1 g", "batch": "K3190", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 20, "unit": "Vial", "source": "Excel 12-08-2026"}, {"name": "Atenolol Tablets IP 25 mg (Atenopress-25)", "batch": "SPA250926", "mfg": "2025-05-01", "expiry": "2027-04-01", "qty": 42, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Atorvastatin Tablets IP 10 mg", "batch": "15303124", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 100, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Azithromycin Tablets IP 250 mg", "batch": "61501124A", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 192, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Azithromycin Tablets IP 500 mg", "batch": "SPA250563", "mfg": "2025-03-01", "expiry": "2028-02-01", "qty": 133, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Budenase AQ Nasal Spray", "batch": "45A2843", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 5, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cefixime Tablets IP 200 mg", "batch": "14402324", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 90, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cefixime Tablets USP 400 mg", "batch": "T-3287", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 300, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cetirizine Tablets I.P. 10 mg", "batch": "11200924", "mfg": "2024-05-01", "expiry": "2027-04-01", "qty": 80, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cholecalciferol Soft Gelatin Capsules USP (Cartiflex D3)", "batch": "AMS-0202", "mfg": "2025-03-01", "expiry": "2027-02-01", "qty": 39, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ciprofloxacin Hydrochloride Eye Drops IP (Cip Drop)", "batch": "M026C3B", "mfg": "2026-03-01", "expiry": "2028-02-01", "qty": 3, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ciprofloxacin Hydrochloride Tablets I.P. 500 mg", "batch": "CPFT24028", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 300, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Clotrimazole Cream I.P. 1% w/w", "batch": "180-150", "mfg": "2024-09-01", "expiry": "2026-08-01", "qty": 3, "unit": "Tube", "source": "Excel 12-08-2026"}, {"name": "Dexamethasone Sodium Phosphate Injection", "batch": "JDP-1348", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 50, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Diclofenac Sodium and Paracetamol Tablets I.P.", "batch": "11701624", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 24, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Dicyclomine Hydrochloride and Paracetamol Tablets", "batch": "19001424", "mfg": "2024-09-01", "expiry": "2027-08-01", "qty": 200, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Doxycycline Capsules I.P. 100 mg", "batch": "16201824", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 100, "unit": "Capsule", "source": "Excel 12-08-2026"}, {"name": "Erythromycin Stearate Tablets IP 500 mg (ERYCON-500)", "batch": "AGT50354", "mfg": "2025-03-01", "expiry": "2028-02-01", "qty": 500, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Griseofulvin Tablets IP 250 mg", "batch": "T-4624", "mfg": "2025-02-01", "expiry": "2027-01-01", "qty": 20, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen and Paracetamol Tablets IP", "batch": "15602324", "mfg": "2024-07-01", "expiry": "2027-06-01", "qty": 52, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Tablets I.P. 200 mg", "batch": "15300524", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 250, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Tablets I.P. 400 mg", "batch": "15402924", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 108, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Levocetirizine Tablets IP", "batch": "SPA251624", "mfg": "2025-08-01", "expiry": "2027-07-01", "qty": 250, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Metformin Hydrochloride (SR) Tablets IP 1000 mg", "batch": "JDT-8551", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 40, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin and Ornidazole Tablets I.P.", "batch": "16002824", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin and Ornidazole Tablets I.P.", "batch": "16003024", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Omeprazole and Domperidone Capsules IP", "batch": "15901224", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 364, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ondansetron Tablets IP 4 mg", "batch": "18006030022261", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 100, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Oral Rehydration Salts IP (ORS)", "batch": "CHPLO-084", "mfg": "2025-06-01", "expiry": "2027-05-01", "qty": 121, "unit": "Packet", "source": "Excel 12-08-2026"}, {"name": "Paracetamol Tablets IP 650 mg (BIOCETAMOL-650)", "batch": "SPAC25068", "mfg": "2025-09-01", "expiry": "2028-08-01", "qty": 450, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Permethrin Cream 5%", "batch": "JDO-1186", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 11, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Povidone-Iodine Solution IP 5% w/v (Skydine)", "batch": "PS125258", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 3, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ranitidine Tablets IP 150 mg", "batch": "10402024", "mfg": "2024-09-01", "expiry": "2026-08-01", "qty": 120, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Vitamin A Paediatric Oral Solution IP", "batch": "MH0916", "mfg": "2025-02-01", "expiry": "2027-01-01", "qty": 20, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "WIFS Junior (Ferrous Sulphate & Folic Acid Tablets IP)", "batch": "B250575", "mfg": "2025-04-01", "expiry": "2027-03-01", "qty": 640, "unit": "Unit", "source": "Excel 12-08-2026"}];
 function mergeExcelMedicineStock(){
   if(!Array.isArray(S.med)) S.med=[];
@@ -405,7 +439,7 @@ localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));
 function persist(){localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));render()}
 function go(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
-  const pageMap={ncd:"ncdPage",tb:"tbPage",ri:"riPage"};
+  const pageMap={ncd:"ncdPage",referral:"referralPage",tb:"tbPage",ri:"riPage"};
   const target=$(pageMap[v]||v);
   if(!target)return;
   target.classList.add("active");
@@ -1253,8 +1287,76 @@ function jasPrintBill(exp){const items=(exp.items||[]).map(i=>`<tr><td>${esc(i.c
 function jasPrintReport(){const rows=jasFilterExpenses(),t=jasTotals(),items=rows.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.bill||"")}</td><td>${esc(x.paidTo||"")}</td><td>${(x.items||[]).map(i=>`${esc(i.category)}: ${jasMoney(i.amount)}`).join("<br>")}</td><td>${jasMoney(x.total)}</td></tr>`).join("");$("printArea").innerHTML=`<h1 style="text-align:center">जन आरोग्य समिति, धरमपुर</h1><div class="printmeta" style="text-align:center">प्रखंड – लिट्टीपाड़ा, जिला – पाकुड़</div><h2>JAS FUND & EXPENSE REPORT</h2><p><b>Opening:</b> ${jasMoney(t.opening)} &nbsp; <b>Received:</b> ${jasMoney(t.received)} &nbsp; <b>Current Balance:</b> ${jasMoney(t.balance)}</p><table><tr><th>Date</th><th>Voucher</th><th>Paid To</th><th>Expense / Items</th><th>Total</th></tr>${items||'<tr><td colspan="5">कोई खर्च नहीं</td></tr>'}</table><div style="margin-top:60px;text-align:right"><b>सचिव</b><br>Rahul Sharma<br>Community Health Officer<br>AAM DHARAMPUR</div>`;document.body.classList.add("report-print-mode");setTimeout(()=>window.print(),100)}
 function jasSetScope(){const m=$("jasMode").value;$("jasDayWrap").style.display=m==="day"?"block":"none";$("jasMonthWrap").style.display=m==="month"?"block":"none";$("jasYearWrap").style.display=m==="year"?"block":"none"}
 if($("jasrDate")){["jasrDate","jaseDate","jaseBillDate","jasReportDay"].forEach(id=>$(id).value=today);$("jasReportYear").value=today.slice(0,4);$("jasExpenseForm").addEventListener("submit",e=>{e.preventDefault();const items=jasExpenseItems();if(!items.length){alert("कम से कम एक खर्च की मद और amount भरें");return}const total=items.reduce((a,x)=>a+x.amount,0);const exp={date:$("jaseDate").value,bill:$("jaseBill").value,paidTo:$("jasePaidTo").value,mode:$("jaseMode").value,items,other:$("jaseOther").value,purpose:$("jasePurpose").value,remark:$("jaseRemark").value,total};S.jasExpenses.push(exp);persist();jasPrintBill(exp);e.target.reset();$("jaseDate").value=today;renderJasItemRows()});$("jasReceiptForm").addEventListener("submit",e=>{e.preventDefault();S.jasReceipts.push({date:$("jasrDate").value,type:$("jasrType").value,amount:+$("jasrAmount").value||0,source:$("jasrSource").value,remark:$("jasrRemark").value});persist();e.target.reset();$("jasrDate").value=today;renderJasReport()});$("jaseCategories").addEventListener("change",renderJasItemRows);$("jasItemRows").addEventListener("input",renderJasTotal);$("jasMode").addEventListener("change",()=>{jasSetScope();renderJasReport()});["jasReportDay","jasReportMonth","jasReportYear","jasReportCategory"].forEach(id=>$(id).addEventListener("input",renderJasReport));$("jasGenerateReport").onclick=renderJasReport;$("jasPrintReport").onclick=jasPrintReport;window.addEventListener("afterprint",()=>document.body.classList.remove("report-print-mode"));renderJasItemRows();jasSetScope();renderJasCards();renderJasReport()}
+
+function rfMakeId(){return crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2)}
+function rfGetFiltered(){
+ const mode=$("rfReportMode")?.value||"all", d=$("rfReportDate")?.value||"", mo=$("rfReportMonth")?.value||"", yr=$("rfReportYear")?.value||"";
+ return S.referrals.filter(r=>{
+   if(mode==="day" && r.date!==d)return false;
+   if(mode==="month" && (!mo||!String(r.date||"").startsWith(mo)))return false;
+   if(mode==="year" && (!yr||String(r.date||"").slice(0,4)!==String(yr)))return false;
+   return true;
+ });
+}
+function rfFollowupCount(rows){return rows.reduce((a,r)=>a+(r.followups||[]).length,0)}
+function renderReferral(){
+ if(!$("referralTable"))return;
+ const rows=rfGetFiltered().slice().sort((a,b)=>String(b.date+" "+b.time).localeCompare(String(a.date+" "+a.time)));
+ const total=rows.length, fups=rfFollowupCount(rows), done=rows.filter(r=>(r.followups||[]).length>0).length, pending=total-done;
+ if($("rfCards"))$("rfCards").innerHTML=[
+  ["Total Referrals",total],["Follow-ups",fups],["Follow-up Done",done],["Pending Follow-up",pending]
+ ].map(x=>`<div class="card stat"><div class="muted">${x[0]}</div><div class="num">${x[1]}</div></div>`).join("");
+ table("referralTable",
+  ["Referral Date","Time","Patient","Village","Type","Reason","Facility","Follow-ups","Latest Outcome","Action"],
+  rows.map(r=>{
+    const fs=r.followups||[], last=fs.length?fs[fs.length-1]:null;
+    const i=S.referrals.indexOf(r);
+    return [r.date,r.time,esc(r.name),esc(r.village||""),esc(r.type||""),esc(r.reason||""),esc(r.facility||""),fs.length,last?esc(last.outcome||""):"Pending",
+      `<button class="btn small secondary" onclick="rfEdit(${i})">✏️ Edit</button> <button class="btn small red" onclick="rfDelete(${i})">🗑️ Delete</button> <button class="btn small" onclick="rfAddFollowup(${i})">➕ Add Follow-up</button>`];
+  })
+ );
+}
+function rfReset(){const f=$("referralForm");if(f)f.reset();$("rfDate").value=today;$("rfTime").value=new Date().toTimeString().slice(0,5)}
+$("referralForm").onsubmit=e=>{
+ e.preventDefault();
+ S.referrals.push({id:rfMakeId(),date:$("rfDate").value,time:$("rfTime").value,name:$("rfName").value.trim(),guardian:$("rfGuardian").value.trim(),age:n("rfAge"),sex:$("rfSex").value,village:$("rfVillage").value.trim(),tola:$("rfTola").value.trim(),mobile:$("rfMobile").value.trim(),abha:$("rfAbha").value.trim(),type:$("rfType").value,facility:$("rfFacility").value.trim(),reason:$("rfReason").value.trim(),remark:$("rfRemark").value.trim(),followups:[]});
+ persist(); rfReset(); alert("Referral saved successfully");
+};
+function rfEdit(i){
+ const r=S.referrals[i]; if(!r)return;
+ const v=prompt("Referral Reason:",r.reason||""); if(v===null)return;
+ r.reason=v; const fac=prompt("Referred To / Facility:",r.facility||""); if(fac!==null)r.facility=fac;
+ persist();
+}
+function rfDelete(i){if(!S.referrals[i])return;if(confirm("क्या यह referral और उसके सभी follow-ups delete करने हैं?")){S.referrals.splice(i,1);persist()}}
+function rfAddFollowup(i){
+ const r=S.referrals[i]; if(!r)return;
+ const no=prompt("Follow-up No. (जैसे 1, 2, 11, 12):",String((r.followups||[]).length+1)); if(no===null)return;
+ const date=prompt("Follow-up Date (YYYY-MM-DD):",today); if(date===null)return;
+ const time=prompt("Follow-up Time (HH:MM):",new Date().toTimeString().slice(0,5)); if(time===null)return;
+ const types=["NCD","TB","HRP","Delivery","ANC","PNC","HBNC","Investigation","Referral","Other"];
+ const type=prompt("Follow-up Type: NCD / TB / HRP / Delivery / ANC / PNC / HBNC / Investigation / Referral / Other",r.type||"Other"); if(type===null)return;
+ const mediums=["Facility Visit","Telephonic","Sahiya","ANM","Sevika","CHO","Other"];
+ const medium=prompt("Follow-up Medium: Facility Visit / Telephonic / Sahiya / ANM / Sevika / CHO / Other","Telephonic"); if(medium===null)return;
+ const by=prompt("Follow-up By (name/designation):",""); if(by===null)return;
+ const outcome=prompt("Outcome:", "Treatment ongoing"); if(outcome===null)return;
+ const remarks=prompt("Remarks:",""); if(remarks===null)return;
+ r.followups=r.followups||[]; r.followups.push({no,date,time,type,medium,by,outcome,remarks});
+ r.followups.sort((a,b)=>String(a.date+" "+a.time).localeCompare(String(b.date+" "+b.time)));
+ persist(); alert("Follow-up added");
+}
+["rfReportMode","rfReportDate","rfReportMonth","rfReportYear"].forEach(id=>{const el=$(id);if(el)el.onchange=renderReferral});
+function rfReportUI(){
+ const mode=$("rfReportMode")?.value||"all";
+ if($("rfReportDateWrap"))$("rfReportDateWrap").style.display=mode==="day"?"flex":"none";
+ if($("rfReportMonthWrap"))$("rfReportMonthWrap").style.display=mode==="month"?"flex":"none";
+ if($("rfReportYearWrap"))$("rfReportYearWrap").style.display=mode==="year"?"flex":"none";
+ renderReferral();
+}
+if($("rfReportMode"))$("rfReportMode").onchange=rfReportUI;
+
 function render(){
- try{renderNCD();renderTB()}catch(e){console.error(e)}
+ try{renderNCD();renderTB();renderReferral()}catch(e){console.error(e)}
  try{renderFPSupply()}catch(e){console.error("FP supply render:",e)}
  let d=S.daily.find(x=>x.date===today)||{};
  const total=k=>S.daily.reduce((a,x)=>a+(+x[k]||0),0);
@@ -1465,3 +1567,5 @@ loadDailyDate();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body></html>
+
+try{rfReset();rfReportUI()}catch(e){console.error("Referral init",e)}
