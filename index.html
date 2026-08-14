@@ -349,6 +349,24 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 <button class="btn full">💾 Save Referral</button>
 </form></div>
 
+<div class="section"><h2>🔁 Follow-up Entry</h2><span class="muted">Same patient के लिए unlimited follow-ups जोड़ें</span></div>
+<div class="card"><form id="rfFollowupForm">
+<div class="field full"><label>Referral / Patient चुनें</label><select id="rfFuReferral" required><option value="">Referral चुनें</option></select></div>
+<div class="field"><label>Follow-up No.</label><input type="number" id="rfFuNo" min="1" step="1" required></div>
+<div class="field"><label>Follow-up Date</label><input type="date" id="rfFuDate" required></div>
+<div class="field"><label>Follow-up Time</label><input type="time" id="rfFuTime" required></div>
+<div class="field"><label>Follow-up Type</label><select id="rfFuType">
+<option>NCD</option><option>TB</option><option>HRP</option><option>Delivery</option><option>ANC</option><option>PNC</option><option>HBNC</option><option>Investigation</option><option>Referral</option><option>Other</option>
+</select></div>
+<div class="field"><label>Follow-up Medium / माध्यम</label><select id="rfFuMedium">
+<option>Facility Visit</option><option>Telephonic</option><option>Sahiya</option><option>ANM</option><option>Sevika</option><option>CHO</option><option>Other</option>
+</select></div>
+<div class="field"><label>Follow-up By</label><input id="rfFuBy" placeholder="Name / Designation"></div>
+<div class="field full"><label>Outcome / परिणाम</label><textarea id="rfFuOutcome" placeholder="जैसे Treatment ongoing, Referred again, Recovered, Admitted..."></textarea></div>
+<div class="field full"><label>Remarks</label><textarea id="rfFuRemarks"></textarea></div>
+<button class="btn full">💾 Save Follow-up</button>
+</form></div>
+
 <div class="section"><h2>📌 Referral Report</h2></div>
 <div class="card">
 <div class="grid">
@@ -360,6 +378,8 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 <div class="grid" id="rfCards"></div>
 </div>
 <div class="tablewrap"><table class="table" id="referralTable"></table></div>
+<div class="section"><h3>🔎 Follow-up History</h3></div>
+<div class="tablewrap"><table class="table" id="referralFollowupTable"></table></div>
 </section>
 
 <section id="tbPage" class="view">
@@ -1299,8 +1319,19 @@ function rfGetFiltered(){
  });
 }
 function rfFollowupCount(rows){return rows.reduce((a,r)=>a+(r.followups||[]).length,0)}
+function rfRenderFollowupOptions(){
+ const sel=$("rfFuReferral"); if(!sel)return;
+ const old=sel.value;
+ sel.innerHTML='<option value="">Referral चुनें</option>'+S.referrals.map((r,i)=>`<option value="${i}">${esc(r.name||"")} — ${esc(r.date||"")} — ${esc(r.type||"")}</option>`).join("");
+ if(old!=="" && S.referrals[old]) sel.value=old;
+}
+function rfNextFollowupNo(){
+ const i=$("rfFuReferral")?.value; if(i===""||i==null||!S.referrals[i])return 1;
+ return (S.referrals[i].followups||[]).reduce((m,f)=>Math.max(m,Number(f.no)||0),0)+1;
+}
 function renderReferral(){
  if(!$("referralTable"))return;
+ rfRenderFollowupOptions();
  const rows=rfGetFiltered().slice().sort((a,b)=>String(b.date+" "+b.time).localeCompare(String(a.date+" "+a.time)));
  const total=rows.length, fups=rfFollowupCount(rows), done=rows.filter(r=>(r.followups||[]).length>0).length, pending=total-done;
  if($("rfCards"))$("rfCards").innerHTML=[
@@ -1314,6 +1345,17 @@ function renderReferral(){
     return [r.date,r.time,esc(r.name),esc(r.village||""),esc(r.type||""),esc(r.reason||""),esc(r.facility||""),fs.length,last?esc(last.outcome||""):"Pending",
       `<button class="btn small secondary" onclick="rfEdit(${i})">✏️ Edit</button> <button class="btn small red" onclick="rfDelete(${i})">🗑️ Delete</button> <button class="btn small" onclick="rfAddFollowup(${i})">➕ Add Follow-up</button>`];
   })
+ );
+ const frows=[];
+ rows.forEach(r=>{
+   (r.followups||[]).forEach(f=>{
+     frows.push([r.date,r.time,esc(r.name||""),esc(f.no||""),esc(f.date||""),esc(f.time||""),esc(f.type||""),esc(f.medium||""),esc(f.by||""),esc(f.outcome||""),esc(f.remarks||"")]);
+   });
+ });
+ frows.sort((a,b)=>String(b[4]+" "+b[5]).localeCompare(String(a[4]+" "+a[5])));
+ table("referralFollowupTable",
+   ["Referral Date","Patient","FU No.","Follow-up Date","Time","Type","Medium","Follow-up By","Outcome","Remarks"],
+   frows.map(x=>[x[0],x[2],x[3],x[4],x[5],x[6],x[7],x[8],x[9],x[10]])
  );
 }
 function rfReset(){const f=$("referralForm");if(f)f.reset();$("rfDate").value=today;$("rfTime").value=new Date().toTimeString().slice(0,5)}
@@ -1329,6 +1371,33 @@ function rfEdit(i){
  persist();
 }
 function rfDelete(i){if(!S.referrals[i])return;if(confirm("क्या यह referral और उसके सभी follow-ups delete करने हैं?")){S.referrals.splice(i,1);persist()}}
+function rfResetFollowupForm(){
+ const f=$("rfFollowupForm"); if(f)f.reset();
+ if($("rfFuDate"))$("rfFuDate").value=today;
+ if($("rfFuTime"))$("rfFuTime").value=new Date().toTimeString().slice(0,5);
+ if($("rfFuNo"))$("rfFuNo").value=rfNextFollowupNo();
+}
+$("rfFuReferral")?.addEventListener("change",()=>{
+ if($("rfFuNo"))$("rfFuNo").value=rfNextFollowupNo();
+});
+$("rfFollowupForm")?.addEventListener("submit",e=>{
+ e.preventDefault();
+ const i=Number($("rfFuReferral").value);
+ const r=S.referrals[i]; if(!r){alert("पहले Referral/Patient चुनें");return;}
+ r.followups=r.followups||[];
+ r.followups.push({
+   no:$("rfFuNo").value,
+   date:$("rfFuDate").value,
+   time:$("rfFuTime").value,
+   type:$("rfFuType").value,
+   medium:$("rfFuMedium").value,
+   by:$("rfFuBy").value.trim(),
+   outcome:$("rfFuOutcome").value.trim(),
+   remarks:$("rfFuRemarks").value.trim()
+ });
+ r.followups.sort((a,b)=>String(a.date+" "+a.time).localeCompare(String(b.date+" "+b.time)));
+ persist(); rfResetFollowupForm(); renderReferral(); alert("Follow-up saved successfully");
+});
 function rfAddFollowup(i){
  const r=S.referrals[i]; if(!r)return;
  const no=prompt("Follow-up No. (जैसे 1, 2, 11, 12):",String((r.followups||[]).length+1)); if(no===null)return;
@@ -1354,6 +1423,7 @@ function rfReportUI(){
  renderReferral();
 }
 if($("rfReportMode"))$("rfReportMode").onchange=rfReportUI;
+rfResetFollowupForm();
 
 function render(){
  try{renderNCD();renderTB();renderReferral()}catch(e){console.error(e)}
@@ -1565,7 +1635,8 @@ function resetData(){if(confirm("सारा data delete करना है?")
 render();
 loadDailyDate();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+
+try{rfReset();rfReportUI()}catch(e){console.error("Referral init",e)}
 </script>
 </body></html>
 
-try{rfReset();rfReportUI()}catch(e){console.error("Referral init",e)}
