@@ -1075,7 +1075,32 @@ let bulkRows=[];
 $("bulkPreview").onclick=async()=>{
  const f=$("bulkFile").files[0];if(!f){alert("Excel/CSV file चुनें");return}
  try{let rows;if(!window.XLSX)throw new Error("Excel/CSV reader load नहीं हुआ");let buf=await f.arrayBuffer();let wb=XLSX.read(buf,{type:"array",cellDates:true});let ws=wb.Sheets[wb.SheetNames[0]];rows=XLSX.utils.sheet_to_json(ws,{defval:""});
- bulkRows=parseBulkRows(rows);let counts={};let errors=0;let keys=new Set();bulkRows.forEach(x=>{counts[x.__module]=(counts[x.__module]||0)+1;let key=(x.__module+"|"+String(x.__name||"")+"|"+String(rowVal(x,["Village"]))+"|"+String(rowVal(x,["Date","DOB","LMP"]))+"|"+String(rowVal(x,["Batch","Batch No."]))).toLowerCase();if(!x.__name)errors++;if(keys.has(key))x.__duplicate=true;keys.add(key)});let dup=bulkRows.filter(x=>x.__duplicate).length;$("bulkSummary").innerHTML=`Total rows: <b>${bulkRows.length}</b> • `+Object.entries(counts).map(([k,v])=>`${k}: <b>${v}</b>`).join(" • ")+`<br>New/valid: <b>${bulkRows.length-errors-dup}</b> • Duplicate in file: <b>${dup}</b> • Missing name: <b>${errors}</b>`;table("bulkTable",["Module","Name","Village","Date","Batch","Quantity","Next Follow-up","Status"],bulkRows.slice(0,100).map(r=>[r.__module,r.__name,rowVal(r,["Village"]),rowVal(r,["Date","DOB","LMP"]),rowVal(r,["Batch","Batch No."]),rowVal(r,["Quantity","Qty"]),rowVal(r,["Next Follow-up","Next Visit"]),r.__duplicate?"Duplicate in file":(!r.__name?"Missing name":"Ready")]));$("bulkImport").disabled=bulkRows.length===0;
+ bulkRows=parseBulkRows(rows);let counts={};let errors=0;let keys=new Set();bulkRows.forEach(x=>{counts[x.__module]=(counts[x.__module]||0)+1;let key=(x.__module+"|"+String(x.__name||"")+"|"+String(rowVal(x,["Village"]))+"|"+String(rowVal(x,["Date","DOB","LMP"]))+"|"+String(rowVal(x,["Batch","Batch No."]))).toLowerCase();if(!x.__name)errors++;if(keys.has(key))x.__duplicate=true;keys.add(key)});let dup=bulkRows.filter(x=>x.__duplicate).length;$("bulkSummary").innerHTML=`Total rows: <b>${bulkRows.length}</b> • `+Object.entries(counts).map(([k,v])=>`${k}: <b>${v}</b>`).join(" • ")+`<br>New/valid: <b>${bulkRows.length-errors-dup}</b> • Duplicate in file: <b>${dup}</b> • Missing name: <b>${errors}</b>`; if(bulkRows.some(x=>x.__module==="ncd"))$("bulkSummary").innerHTML+=`<br><b>Under Treatment/NCD preview:</b> Mobile, ABHA, Father/Spouse, HTN/DM और treatment status भी नीचे दिखेंगे।`;const ncdRows=bulkRows.filter(r=>r.__module==="ncd");
+let previewHeaders, previewData;
+if(ncdRows.length){
+  previewHeaders=["Module","Name","Father / Spouse","Age","Sex","Village","Mobile","ABHA","HTN","DM","HTN Start","DM Start","HTN Status","DM Status","Next Follow-up","Status"];
+  previewData=bulkRows.slice(0,100).map(r=>{
+    const hs=String(rowVal(r,["HTN_Treatment_Start_Date","HTN Treatment Start Date","HTN Start Date"])||"").trim();
+    const hst=String(rowVal(r,["HTN_Treatment_Status","HTN Treatment Status"])||"").trim();
+    const ds=String(rowVal(r,["Diabetes_Treatment_Start_Date","DM_Treatment_Start_Date","Diabetes Treatment Start Date","DM Treatment Start Date"])||"").trim();
+    const dst=String(rowVal(r,["DM_Treatment_Status","Diabetes_Treatment_Status","DM Treatment Status","Diabetes Treatment Status"])||"").trim();
+    const hasH=!!(hs||hst), hasD=!!(ds||dst);
+    return [
+      r.__module,r.__name,
+      rowVal(r,["Father/Spouse","Father / Spouse","Father Name","Spouse Name","Father/Guardian","Guardian Name","Father or Spouse"]),
+      rowVal(r,["Age"]),rowVal(r,["Sex","Gender"]),rowVal(r,["Village"]),
+      rowVal(r,["Mobile","Mobile #","Mobile No","Mobile Number","Phone","Contact Number"]),
+      rowVal(r,["ABHA ID","ABHA","ABHA Number","ABHA No","ABHA No."]),
+      hasH?"Yes":"No",hasD?"Yes":"No",hs,ds,hst,dst,
+      rowVal(r,["Next Follow-up","Next Visit"]),
+      r.__duplicate?"Duplicate in file":(!r.__name?"Missing name":"Ready")
+    ];
+  });
+}else{
+  previewHeaders=["Module","Name","Village","Date","Batch","Quantity","Next Follow-up","Status"];
+  previewData=bulkRows.slice(0,100).map(r=>[r.__module,r.__name,rowVal(r,["Village"]),rowVal(r,["Date","DOB","LMP"]),rowVal(r,["Batch","Batch No."]),rowVal(r,["Quantity","Qty"]),rowVal(r,["Next Follow-up","Next Visit"]),r.__duplicate?"Duplicate in file":(!r.__name?"Missing name":"Ready")]);
+}
+table("bulkTable",previewHeaders,previewData);$("bulkImport").disabled=bulkRows.length===0;
  }catch(e){console.error(e);alert("File पढ़ने में समस्या: "+e.message)}
 };
 function parseDate(v){if(!v)return "";let s=String(v);if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);let m=s.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);if(m)return `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;m=s.match(/(\d{1,2})[\/-](\d{4})/);if(m)return `${m[2]}-${String(m[1]).padStart(2,"0")}-01`;return ""}
