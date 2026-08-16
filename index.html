@@ -501,6 +501,8 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
     <button type="button" class="btn" onclick="aiAnalyze()">🤖 Analyze & Suggest</button>
+    <button type="button" class="btn" onclick="aiWhatsAppAlert()">🟢 WhatsApp Alert</button>
+    <button type="button" class="btn" onclick="aiSMSAlert()">💬 Text Message</button>
     <button type="button" class="btn" onclick="aiAddSelected()">➕ Add Selected to Patient</button>
     <button type="button" class="btn" onclick="aiPrescription()">📄 Prescription</button>
     <button type="button" class="btn" onclick="aiConsent()">📝 Consent</button>
@@ -1897,6 +1899,40 @@ try{rfReset();rfReportUI()}catch(e){console.error("Referral init",e)}
   };
 })();
 </script>
+<script>
+(function(){
+  const gv=id=>{const e=document.getElementById(id);return e?(e.value||"").trim():"";};
+  function aiMsg(){
+    const type=gv("aiLMP") ? "ANC / HRP" :
+      ((gv("aiBP")||gv("aiRBS")||gv("aiFBS")||gv("aiPPBS")) ? "NCD" :
+      (/tb|cough/i.test(gv("aiQuery")) ? "TB" : "Clinical Follow-up"));
+    const name=gv("aiName"), village=gv("aiVillage"), mobile=gv("aiMobile");
+    const date=gv("aiLMP") ? "LMP: "+gv("aiLMP") : "";
+    const query=gv("aiQuery");
+    return [
+      "🔔 HSC Tracker Alert",
+      "Category: "+type,
+      name?"Patient: "+name:"",
+      village?"Village: "+village:"",
+      date,
+      query?"Details: "+query:"",
+      "Please take necessary follow-up/action.",
+      "AAM Dharampur, Littipara, Pakur"
+    ].filter(Boolean).join("\n");
+  }
+  window.aiWhatsAppAlert=function(){
+    const msg=aiMsg(), mobile=gv("aiMobile").replace(/\D/g,"");
+    const url=mobile ? "https://wa.me/"+(mobile.length===10?"91"+mobile:mobile)+"?text="+encodeURIComponent(msg)
+                     : "https://wa.me/?text="+encodeURIComponent(msg);
+    window.open(url,"_blank");
+  };
+  window.aiSMSAlert=function(){
+    const msg=aiMsg(), mobile=gv("aiMobile").replace(/\D/g,"");
+    window.location.href="sms:"+(mobile||"")+"?body="+encodeURIComponent(msg);
+  };
+})();
+</script>
+
 
 
 </body></html>
