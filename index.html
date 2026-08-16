@@ -440,6 +440,33 @@ body.report-print-mode #printArea{display:block!important;position:static!import
  </div>
  <div class="notice" style="margin-top:12px"><b>महत्वपूर्ण:</b> यह final offline-first web-app prototype है। Data इस browser/device में रहता है। अलग-अलग mobile/laptop में automatic sync के लिए secure cloud backend और HTTPS hosting जोड़ना अगला deployment step होगा।</div>
 </section>
+
+<section id="alerts" class="card" style="margin-top:16px">
+  <h2>🔔 Alerts & Messages</h2>
+  <p style="margin-top:-6px;color:#666">WhatsApp और Text Message के लिए section-wise ready message बनाएं।</p>
+  <div class="grid">
+    <div class="field"><label>Alert Type</label>
+      <select id="alertType">
+        <option>ANC</option><option>HRP</option><option>NCD</option><option>Delivery</option>
+        <option>Medicine</option><option>Diagnostic</option><option>Referral</option><option>TB</option>
+        <option>HBNC</option><option>RI</option><option>JAS</option><option>Family Planning</option><option>Other</option>
+      </select>
+    </div>
+    <div class="field"><label>Patient / Person Name</label><input id="alertName"></div>
+    <div class="field"><label>Mobile Number</label><input id="alertMobile" inputmode="numeric"></div>
+    <div class="field"><label>Village / Facility</label><input id="alertVillage"></div>
+    <div class="field"><label>Due / Alert Date</label><input id="alertDate" type="date"></div>
+    <div class="field"><label>Time</label><input id="alertTime" type="time"></div>
+  </div>
+  <div class="field" style="margin-top:8px"><label>Details / Reason</label><textarea id="alertDetails" rows="3" placeholder="उदाहरण: ANC check-up due, NCD follow-up, HRP visit, medicine stock alert..."></textarea></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+    <button type="button" class="btn" onclick="makeAlertMessage()">📝 Generate Message</button>
+    <button type="button" class="btn" onclick="sendAlertWhatsApp()">🟢 WhatsApp</button>
+    <button type="button" class="btn" onclick="sendAlertSMS()">💬 Text Message</button>
+  </div>
+  <div class="field" style="margin-top:10px"><label>Generated Message</label><textarea id="alertMessage" rows="8" readonly></textarea></div>
+  <small style="color:#666">WhatsApp/Text button message को तैयार करके आपके फोन के संबंधित app में खोलेगा। बिना user action के WhatsApp group में automatic भेजने के लिए official WhatsApp Business/API की जरूरत होगी।</small>
+</section>
 </main>
 <div id="printArea"></div>
 
@@ -1669,5 +1696,53 @@ if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(
 
 try{rfReset();rfReportUI()}catch(e){console.error("Referral init",e)}
 </script>
+<script>
+(function(){
+  function gv(id){var e=document.getElementById(id); return e?e.value.trim():"";}
+  window.makeAlertMessage=function(){
+    var type=gv("alertType"), name=gv("alertName"), mob=gv("alertMobile"), village=gv("alertVillage");
+    var date=gv("alertDate"), time=gv("alertTime"), details=gv("alertDetails");
+    var labels={
+      ANC:"ANC check-up / follow-up alert",
+      HRP:"High Risk Pregnancy (HRP) follow-up alert",
+      NCD:"NCD (HTN/DM) follow-up alert",
+      Delivery:"Delivery / expected delivery alert",
+      Medicine:"Medicine stock / medicine-related alert",
+      Diagnostic:"Diagnostic test / report alert",
+      Referral:"Referral follow-up alert",
+      TB:"TB follow-up alert",
+      HBNC:"HBNC follow-up alert",
+      RI:"RI / Immunization session alert",
+      JAS:"Jan Arogya Samiti (JAS) alert",
+      "Family Planning":"Family Planning follow-up / supply alert",
+      Other:"Health programme alert"
+    };
+    var lines=[
+      "🔔 HSC Tracker Alert",
+      "Type: "+(labels[type]||type)
+    ];
+    if(name) lines.push("Patient/Person: "+name);
+    if(village) lines.push("Village/Facility: "+village);
+    if(date) lines.push("Date: "+date);
+    if(time) lines.push("Time: "+time);
+    if(details) lines.push("Details: "+details);
+    lines.push("Please take necessary follow-up/action.");
+    document.getElementById("alertMessage").value=lines.join("\n");
+  };
+  window.sendAlertWhatsApp=function(){
+    if(!gv("alertMessage")) window.makeAlertMessage();
+    var msg=gv("alertMessage"), mobile=gv("alertMobile").replace(/\D/g,"");
+    var url=mobile ? "https://wa.me/"+(mobile.length===10?"91"+mobile:mobile)+"?text="+encodeURIComponent(msg)
+                   : "https://wa.me/?text="+encodeURIComponent(msg);
+    window.open(url,"_blank");
+  };
+  window.sendAlertSMS=function(){
+    if(!gv("alertMessage")) window.makeAlertMessage();
+    var msg=gv("alertMessage"), mobile=gv("alertMobile").replace(/\D/g,"");
+    window.location.href="sms:"+(mobile?mobile:"")+"?body="+encodeURIComponent(msg);
+  };
+})();
+</script>
+
 </body></html>
 
