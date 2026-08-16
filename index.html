@@ -293,7 +293,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 <section id="village" class="view">
  <div class="section"><h2>🏘️ Village / Tola Master</h2><span class="muted">Population, Sahiya और sub-tola</span></div>
  <div class="card"><form id="vform">
-  <div class="field"><label>Village</label><input id="vname" required></div><div class="field"><label>Population</label><input type="number" id="vpop" min="0"></div><div class="field"><label>Male</label><input type="number" id="vmale" min="0"></div><div class="field"><label>Female</label><input type="number" id="vfemale" min="0"></div>
+  <div class="field"><label>Village</label><input id="vname" required></div><div class="field"><label>Total Households</label><input type="number" id="vhouseholds" min="0"></div><div class="field"><label>Population</label><input type="number" id="vpop" min="0"></div><div class="field"><label>Male</label><input type="number" id="vmale" min="0"></div><div class="field"><label>Female</label><input type="number" id="vfemale" min="0"></div>
   <div class="field"><label>Children</label><input type="number" id="vchild" min="0"></div><div class="field"><label>Elderly</label><input type="number" id="velderly" min="0"></div><div class="field"><label>Sahiya</label><input id="vsahiya"></div><div class="field"><label>ANM</label><input id="vanm"></div>
   <div class="field full">
    <label>Sub-Tola / Tola</label>
@@ -301,9 +301,25 @@ body.report-print-mode #printArea{display:block!important;position:static!import
    <button type="button" class="btn secondary full" id="addTolaBtn" style="margin-top:8px">➕ Add Tola</button>
    <div id="tolaTotalNote" class="muted" style="margin-top:8px">हर Tola का नाम और उसकी Population अलग-अलग भरें।</div>
   </div>
-  <button class="btn full">💾 Save Village</button>
+  <div class="full card" style="background:#f8fafc;margin-top:4px"><div class="section" style="margin-top:0"><h3 style="margin:0">🎯 Automatic Population Targets</h3><span class="muted">Population डालते ही annual + monthly targets स्वतः calculate होंगे।</span></div>
+  <div class="grid" id="vTargetPreview"></div>
+  <div class="notice" style="margin-top:10px">नोट: default planning percentages editable हैं। इन्हें अपने राज्य/कार्यक्रम की लागू guideline के अनुसार बदलें।</div>
+  <div class="grid" style="margin-top:10px">
+   <div class="field"><label>NCD %</label><input type="number" step="0.1" id="rateNcd" value="37"></div>
+   <div class="field"><label>ANC %</label><input type="number" step="0.1" id="rateAnc" value="3"></div>
+   <div class="field"><label>Delivery %</label><input type="number" step="0.1" id="rateDelivery" value="2.5"></div>
+   <div class="field"><label>TB %</label><input type="number" step="0.1" id="rateTb" value="1"></div>
+   <div class="field"><label>Newborn %</label><input type="number" step="0.1" id="rateNewborn" value="2"></div>
+   <div class="field"><label>Infant %</label><input type="number" step="0.1" id="rateInfant" value="2.5"></div>
+   <div class="field"><label>Adolescent %</label><input type="number" step="0.1" id="rateAdolescent" value="10"></div>
+   <div class="field"><label>Elderly %</label><input type="number" step="0.1" id="rateElderly" value="8"></div>
+  </div>
+ </div>
+ <button class="btn full">💾 Save Village</button>
  </form></div>
  <div class="tablewrap"><table class="table" id="villageTable"></table></div>
+ <div class="section" style="margin-top:16px"><h3>📊 Village / HSC Population Target Report</h3><span class="muted">Village-wise और पूरे HSC का yearly + monthly target</span></div>
+ <div class="card"><div class="searchbar"><select id="vTargetScope"><option value="all">All HSC</option><option value="village">Village-wise</option></select><select id="vTargetVillage"></select><button type="button" class="btn" id="vTargetReportBtn">🔎 Generate Report</button><button type="button" class="btn secondary" id="vTargetPrintBtn">🖨️ Print / Save PDF</button></div><div id="vTargetReportSummary" class="grid" style="margin-top:10px"></div><div class="tablewrap" style="margin-top:10px"><table class="table" id="vTargetReportTable"></table></div></div>
 </section>
 
 <section id="riPage" class="view">
@@ -456,6 +472,8 @@ if(!Array.isArray(S.daily)) S.daily=[]; if(!Array.isArray(S.jasReceipts)) S.jasR
 const seededMedicineCount=mergeExcelMedicineStock();
 localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));
 
+function normalizeVillageData(){if(!Array.isArray(S.villages))S.villages=[];S.villages.forEach(v=>{if(v.households==null)v.households=0;if(!v._targetRates)v._targetRates={ncd:37,anc:3,delivery:2.5,tb:1,newborn:2,infant:2.5,adolescent:10,elderly:8}})}
+normalizeVillageData();
 function persist(){localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));render()}
 function go(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
@@ -1075,13 +1093,26 @@ function loadVillageTolas(tolas){
  });
  if(!tolas||!tolas.length)addTolaRow();
 }
+function villageTargetRates(){return {ncd:+($('rateNcd')?.value||37),anc:+($('rateAnc')?.value||3),delivery:+($('rateDelivery')?.value||2.5),tb:+($('rateTb')?.value||1),newborn:+($('rateNewborn')?.value||2),infant:+($('rateInfant')?.value||2.5),adolescent:+($('rateAdolescent')?.value||10),elderly:+($('rateElderly')?.value||8)}}
+function roundTarget(x){return Math.round((+x||0)*100)/100}
+function villageTargets(v){const p=+v.population||0,r=v._targetRates||villageTargetRates();return {population:p,households:+v.households||0,ncd:Math.round(p*r.ncd/100),anc:Math.round(p*r.anc/100),delivery:Math.round(p*r.delivery/100),tb:Math.round(p*r.tb/100),newborn:Math.round(p*r.newborn/100),infant:Math.round(p*r.infant/100),adolescent:Math.round(p*r.adolescent/100),elderly:Math.round(p*r.elderly/100),adult:Math.max(0,p-Math.round(p*r.newborn/100)-Math.round(p*r.infant/100)-Math.round(p*r.adolescent/100)-Math.round(p*r.elderly/100))}}
 function renderVillage(){
- table("villageTable",["Village","Population","Male","Female","Children","Elderly","Sahiya","ANM","Tola / Tola Population"],S.villages.slice().reverse().map(x=>{
+ table("villageTable",["Village","Households","Population","Male","Female","Children","Elderly","Sahiya","ANM","Tola / Tola Population"],S.villages.slice().reverse().map(x=>{
    const ts=(x.tolas||[]).map(t=>typeof t==="string"?t:`${t.name} (${t.population||0})`);
-   return [x.name,x.population,x.male,x.female,x.children,x.elderly,x.sahiya,x.anm,ts.join(", ")];
+   return [x.name,x.households||0,x.population,x.male,x.female,x.children,x.elderly,x.sahiya,x.anm,ts.join(", ")];
  }));
+ renderVillageTargetControls();
 }
-$("vpop").oninput=updateTolaTotal;
+function renderVillageTargetControls(){const sel=$("vTargetVillage");if(!sel)return;sel.innerHTML=S.villages.map(x=>`<option value="${esc(x.name)}">${esc(x.name)}</option>`).join("");renderVillageTargetReport()}
+function renderTargetPreview(){const el=$("vTargetPreview");if(!el)return;const p=n("vpop"),r=villageTargetRates();const vals=[['🩸 NCD',Math.round(p*r.ncd/100),r.ncd+'%'],['🤰 ANC',Math.round(p*r.anc/100),r.anc+'%'],['🤱 Delivery',Math.round(p*r.delivery/100),r.delivery+'%'],['🫁 TB',Math.round(p*r.tb/100),r.tb+'%'],['👶 Newborn',Math.round(p*r.newborn/100),r.newborn+'%'],['🍼 Infant',Math.round(p*r.infant/100),r.infant+'%'],['🧑 Adolescent',Math.round(p*r.adolescent/100),r.adolescent+'%'],['👴 Elderly',Math.round(p*r.elderly/100),r.elderly+'%']];el.innerHTML=vals.map(x=>`<div class="card stat"><div class="muted">${x[0]} <span class="tag">${x[2]}</span></div><div class="num">${x[1]}</div><div class="muted">Annual target • Monthly ≈ ${roundTarget(x[1]/12)}</div></div>`).join("")}
+function renderVillageTargetReport(){const scope=$("vTargetScope")?.value||'all',name=$("vTargetVillage")?.value;let vs=scope==='village'?S.villages.filter(x=>x.name===name):S.villages;let totals=vs.reduce((a,v)=>{let t=villageTargets(v);Object.keys(t).forEach(k=>a[k]=(a[k]||0)+(+t[k]||0));return a},{population:0,households:0});let rows=vs.map(v=>{let t=villageTargets(v);return [v.name,t.households,t.population,t.ncd,roundTarget(t.ncd/12),t.anc,roundTarget(t.anc/12),t.delivery,roundTarget(t.delivery/12),t.tb,roundTarget(t.tb/12),t.newborn,t.infant,t.adolescent,t.adult,t.elderly]});table("vTargetReportTable",["Village","Households","Population","NCD Y","NCD M","ANC Y","ANC M","Delivery Y","Delivery M","TB Y","TB M","Newborn Y","Infant Y","Adolescent Y","Adult Y","Elderly Y"],rows);let t=totals;$("vTargetReportSummary").innerHTML=[['🏠 Households',t.households],['👥 Population',t.population],['🩸 NCD Target',t.ncd],['🤰 ANC Target',t.anc],['🤱 Delivery Target',t.delivery],['🫁 TB Target',t.tb],['👴 Elderly Target',t.elderly],['👶 Newborn Target',t.newborn]].map(x=>`<div class="card stat"><div class="muted">${x[0]}</div><div class="num">${x[1]||0}</div></div>`).join("")}
+$("vpop").oninput=()=>{updateTolaTotal();renderTargetPreview()};
+["rateNcd","rateAnc","rateDelivery","rateTb","rateNewborn","rateInfant","rateAdolescent","rateElderly"].forEach(id=>{if($(id))$(id).oninput=renderTargetPreview});
+$("vTargetReportBtn")?.addEventListener("click",renderVillageTargetReport);
+$("vTargetScope")?.addEventListener("change",()=>{let w=$("vTargetVillage");if(w)w.style.display=$("vTargetScope").value==='village'?'block':'none';renderVillageTargetReport()});
+$("vTargetVillage")?.addEventListener("change",renderVillageTargetReport);
+$("vTargetPrintBtn")?.addEventListener("click",()=>{const pa=$("printArea");if(!pa)return;pa.innerHTML='<h1>HSC Tracker — Village Population Target Report</h1><div class="printmeta">Generated: '+new Date().toLocaleString('en-IN')+'</div>'+($("vTargetReportSummary")?.outerHTML||'')+($("vTargetReportTable")?.outerHTML||'');document.body.classList.add('report-print-mode');setTimeout(()=>window.print(),100);setTimeout(()=>document.body.classList.remove('report-print-mode'),1000)});
+renderTargetPreview();
 $("addTolaBtn").onclick=()=>addTolaRow();
 $("vform").onsubmit=e=>{
  e.preventDefault();
@@ -1092,7 +1123,7 @@ $("vform").onsubmit=e=>{
    if(!confirm(`Village population ${population} है लेकिन Tola population ${tolaTotal} है। फिर भी save करना है?`))return false;
  }
  let old=S.villages.find(x=>x.name.toLowerCase()===name.toLowerCase());
- let obj={name,population,male:n("vmale"),female:n("vfemale"),children:n("vchild"),elderly:n("velderly"),sahiya:$("vsahiya").value,anm:$("vanm").value,tolas};
+ let obj={name,population,households:n("vhouseholds"),male:n("vmale"),female:n("vfemale"),children:n("vchild"),elderly:n("velderly"),sahiya:$("vsahiya").value,anm:$("vanm").value,tolas,_targetRates:villageTargetRates()};
  if(old)Object.assign(old,obj);else S.villages.push(obj);
  persist(); e.target.reset(); $("vTolaRows").innerHTML=""; addTolaRow(); alert("Village saved"); return false;
 };
