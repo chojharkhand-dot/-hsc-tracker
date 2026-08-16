@@ -467,6 +467,49 @@ body.report-print-mode #printArea{display:block!important;position:static!import
   <div class="field" style="margin-top:10px"><label>Generated Message</label><textarea id="alertMessage" rows="8" readonly></textarea></div>
   <small style="color:#666">WhatsApp/Text button message को तैयार करके आपके फोन के संबंधित app में खोलेगा। बिना user action के WhatsApp group में automatic भेजने के लिए official WhatsApp Business/API की जरूरत होगी।</small>
 </section>
+
+<section id="aiClinical" class="card" style="margin-top:16px">
+  <h2>🤖 AI Clinical Assistant</h2>
+  <p style="color:#666;margin-top:-6px">Clinical decision-support: suggestions are for review; nothing is added to patient records or stock until you confirm.</p>
+
+  <div class="grid">
+    <div class="field"><label>Patient Name</label><input id="aiName"></div>
+    <div class="field"><label>Father / Spouse Name</label><input id="aiGuardian"></div>
+    <div class="field"><label>Age</label><input id="aiAge" type="number" min="0"></div>
+    <div class="field"><label>Gender</label><select id="aiSex"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+    <div class="field"><label>Mobile</label><input id="aiMobile" inputmode="numeric"></div>
+    <div class="field"><label>ABHA</label><input id="aiAbha"></div>
+    <div class="field"><label>Aadhaar</label><input id="aiAadhaar"></div>
+    <div class="field"><label>Village</label><input id="aiVillage"></div>
+    <div class="field"><label>Block</label><input id="aiBlock" value="Littipara"></div>
+    <div class="field"><label>District</label><input id="aiDistrict" value="Pakur"></div>
+    <div class="field"><label>Centre</label><input id="aiCentre" value="Ayushman Arogya Mandir Dharampur, Littipara, Pakur"></div>
+  </div>
+
+  <div class="grid" style="margin-top:8px">
+    <div class="field"><label>BP (mmHg)</label><input id="aiBP" placeholder="e.g. 150/95"></div>
+    <div class="field"><label>RBS (mg/dL)</label><input id="aiRBS" type="number"></div>
+    <div class="field"><label>FBS (mg/dL)</label><input id="aiFBS" type="number"></div>
+    <div class="field"><label>PPBS (mg/dL)</label><input id="aiPPBS" type="number"></div>
+    <div class="field"><label>LMP</label><input id="aiLMP" type="date"></div>
+    <div class="field"><label>Known pregnancy / weeks</label><input id="aiGA" placeholder="e.g. 18 weeks"></div>
+  </div>
+
+  <div class="field" style="margin-top:8px"><label>Symptoms / Clinical Findings / Disease Query</label>
+    <textarea id="aiQuery" rows="5" placeholder="Example: fever 3 days, cough 2 weeks, headache..."></textarea>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+    <button type="button" class="btn" onclick="aiAnalyze()">🤖 Analyze & Suggest</button>
+    <button type="button" class="btn" onclick="aiAddSelected()">➕ Add Selected to Patient</button>
+    <button type="button" class="btn" onclick="aiPrescription()">📄 Prescription</button>
+    <button type="button" class="btn" onclick="aiConsent()">📝 Consent</button>
+    <button type="button" class="btn" onclick="aiReferral()">🔴 Referral Slip</button>
+  </div>
+
+  <div id="aiResult" style="margin-top:12px"></div>
+  <div id="aiDocs" style="margin-top:12px"></div>
+</section>
 </main>
 <div id="printArea"></div>
 
@@ -1743,6 +1786,118 @@ try{rfReset();rfReportUI()}catch(e){console.error("Referral init",e)}
   };
 })();
 </script>
+<script>
+(function(){
+  const $ai=id=>document.getElementById(id);
+  const val=id=>($ai(id)?.value||"").trim();
+  const escAi=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  let aiSuggestions=[];
+
+  function calcEDD(lmp){
+    if(!lmp) return "";
+    const d=new Date(lmp+"T00:00:00");
+    if(isNaN(d)) return "";
+    d.setDate(d.getDate()+280);
+    return d.toISOString().slice(0,10);
+  }
+  function parseBP(x){
+    const m=String(x).match(/^\s*(\d+)\s*\/\s*(\d+)\s*$/);
+    return m?[+m[1],+m[2]]:null;
+  }
+
+  window.aiAnalyze=function(){
+    aiSuggestions=[];
+    const q=val("aiQuery").toLowerCase();
+    const age=+val("aiAge")||0, bp=parseBP(val("aiBP"));
+    const rbs=+val("aiRBS")||0, fbs=+val("aiFBS")||0, ppbs=+val("aiPPBS")||0;
+    const lmp=val("aiLMP"), edd=calcEDD(lmp);
+    const textParts=[];
+    let cat="Other";
+
+    if(lmp){
+      cat="ANC";
+      textParts.push("ANC: LMP "+escAi(lmp)+" → estimated EDD "+escAi(edd)+". Confirm gestational age and schedule the appropriate ANC visit.");
+      aiSuggestions.push({kind:"category",label:"ANC patient",detail:"LMP entered; EDD calculated: "+edd});
+      if(bp && (bp[0]>=140 || bp[1]>=90)){
+        aiSuggestions.push({kind:"risk",label:"Pregnancy BP risk flag",detail:"Raised BP recorded; assess for hypertensive disorder/HRP and follow referral protocol."});
+        cat="HRP";
+      }
+    }
+
+    if(bp && (bp[0]>=140 || bp[1]>=90)){
+      aiSuggestions.push({kind:"ncd",label:"HTN assessment",detail:"BP is elevated. Repeat/confirm measurements according to protocol and assess for HTN."});
+      cat=(cat==="Other"||cat==="NCD")?"NCD":cat;
+    }
+    if((fbs>=126)||(ppbs>=200)||(rbs>=200)){
+      aiSuggestions.push({kind:"ncd",label:"Diabetes assessment",detail:"Glucose value is in a diabetic-range threshold; confirm/assess according to protocol."});
+      cat=(cat==="Other"||cat==="NCD")?"NCD":cat;
+    }
+    if(/cough/.test(q) && /(2 week|2 weeks|14 day|long|persistent)/.test(q)){
+      aiSuggestions.push({kind:"tb",label:"TB screening",detail:"Cough duration suggests TB screening; arrange sputum/NAAT or other appropriate testing per protocol."});
+      cat="TB";
+    }
+    if(/fever/.test(q) && /(3 day|4 day|5 day|persistent)/.test(q)){
+      aiSuggestions.push({kind:"diagnostic",label:"Fever assessment",detail:"Consider appropriate examination and diagnostic testing based on local fever protocol."});
+    }
+    if(!aiSuggestions.length){
+      aiSuggestions.push({kind:"general",label:"General assessment",detail:"No rule-based high-risk flag detected from the entered values. Perform clinical examination and use local treatment guidelines."});
+    }
+
+    const targetCat=cat;
+    let html="<div class='card'><b>Suggested category:</b> "+escAi(targetCat);
+    if(edd) html+="<br><b>EDD:</b> "+escAi(edd);
+    html+="</div><div class='card'><b>Suggestions</b><ul>";
+    aiSuggestions.forEach((s,i)=>{
+      html+="<li><label><input type='checkbox' class='aiPick' data-i='"+i+"' checked> <b>"+escAi(s.label)+"</b> — "+escAi(s.detail)+"</label></li>";
+    });
+    html+="</ul>";
+    html+="<div style='margin-top:8px'><b>Tests to consider:</b> "+escAi(q.includes("cough")?"Sputum/NAAT or other TB diagnostic as per protocol":"Based on examination and suspected condition; select only clinically indicated tests.")+"</div>";
+    html+="<div style='margin-top:8px'><b>Follow-up:</b> "+escAi(targetCat==="ANC"?"Schedule ANC visit per gestational age.":targetCat==="HRP"?"Closer HRP follow-up/referral per risk assessment.":targetCat==="TB"?"Follow up after diagnostic result and treatment initiation if confirmed.":targetCat==="NCD"?"NCD follow-up as per treatment/control status.":"Clinical review based on diagnosis.")+"</div></div>";
+    $ai("aiResult").innerHTML=html;
+  };
+
+  window.aiAddSelected=function(){
+    const picks=[...document.querySelectorAll(".aiPick:checked")].map(x=>aiSuggestions[+x.dataset.i]).filter(Boolean);
+    const name=val("aiName"), mobile=val("aiMobile"), village=val("aiVillage"), lmp=val("aiLMP");
+    const cat=(lmp?"ANC":(picks.some(x=>x.kind==="tb")?"TB":(picks.some(x=>x.kind==="ncd")?"NCD":"Other")));
+    if(!name){alert("Patient Name भरें।");return;}
+    const rec={date:new Date().toISOString().slice(0,10),name,guardian:val("aiGuardian"),age:val("aiAge"),sex:val("aiSex"),mobile,abhaid:val("aiAbha"),aadhaar:val("aiAadhaar"),village,tola:"",condition:cat,diagnosis:cat,bp:val("aiBP"),rbs:val("aiRBS")||val("aiFBS")||val("aiPPBS"),remark:"AI Clinical Assistant - confirmed"};
+    try{
+      if(window.S && Array.isArray(S.patients)){ S.patients.push(rec); if(typeof save==="function") save(); else if(typeof persist==="function") persist(); }
+      alert("Selected patient category/details added after confirmation.");
+    }catch(e){alert("Patient record save नहीं हो सका: "+e.message);}
+  };
+
+  function docBase(title){
+    return `<div style="font-family:Arial,sans-serif;max-width:800px;margin:auto;padding:24px;background:white;color:#111">
+      <h2 style="text-align:center;margin:0">${escAi(title)}</h2>
+      <div style="text-align:center">Ayushman Arogya Mandir Dharampur, Littipara, Pakur</div>
+      <hr>
+      <p><b>Patient:</b> ${escAi(val("aiName"))} &nbsp; <b>Age:</b> ${escAi(val("aiAge"))} &nbsp; <b>Sex:</b> ${escAi(val("aiSex"))}</p>
+      <p><b>Father/Spouse:</b> ${escAi(val("aiGuardian"))} &nbsp; <b>Mobile:</b> ${escAi(val("aiMobile"))}</p>
+      <p><b>Village:</b> ${escAi(val("aiVillage"))} &nbsp; <b>ABHA:</b> ${escAi(val("aiAbha"))}</p>`;
+  }
+  function printDoc(html){
+    const w=window.open("","_blank"); if(!w){alert("Pop-up blocked. Allow pop-ups for this site.");return;}
+    w.document.write(html+`<hr><p style="margin-top:50px"><b>Community Health Officer</b><br>Rahul Sharma<br>AAM Dharampur</p><button onclick="window.print()">Print / Save PDF</button></div>`);
+    w.document.close();
+  }
+  window.aiPrescription=function(){
+    const body=docBase("PRESCRIPTION");
+    const q=val("aiQuery");
+    printDoc(body+`<p><b>Clinical findings / complaint:</b> ${escAi(q)}</p><p><b>Recorded values:</b> BP ${escAi(val("aiBP"))}, RBS ${escAi(val("aiRBS"))}, FBS ${escAi(val("aiFBS"))}, PPBS ${escAi(val("aiPPBS"))}</p><h3>Medicines / Tests</h3><p>Use only medicines/tests selected and confirmed by the clinician from the facility master and applicable treatment guideline.</p>`);
+  };
+  window.aiConsent=function(){
+    const body=docBase("PATIENT CONSENT FORM");
+    printDoc(body+`<p>I have been informed about the proposed examination, investigation, treatment and/or referral. I had the opportunity to ask questions and consent voluntarily.</p><p>Date: __________ &nbsp; Time: __________</p><p style="margin-top:60px">Patient/Guardian Signature: ____________________</p>`);
+  };
+  window.aiReferral=function(){
+    const body=docBase("REFERRAL SLIP");
+    printDoc(body+`<p><b>Reason for referral:</b> ${escAi(val("aiQuery"))}</p><p><b>Recorded BP:</b> ${escAi(val("aiBP"))} &nbsp; <b>Glucose:</b> ${escAi(val("aiRBS")||val("aiFBS")||val("aiPPBS"))}</p><p><b>Referred to:</b> __________________________</p><p><b>Referral date/time:</b> __________ / __________</p>`);
+  };
+})();
+</script>
+
 
 </body></html>
 
