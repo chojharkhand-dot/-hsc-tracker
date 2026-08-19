@@ -2271,6 +2271,60 @@ try{rfReset();rfReportUI()}catch(e){console.error("Referral init",e)}
   renderRecipients();
 })();
 </script>
+
+<section id="inventorySection" class="section-card" style="display:none">
+<h2>🏥 Inventory Register</h2>
+<div class="form-grid">
+<input type="hidden" id="invEditId">
+<label>Item Name<select id="invItemName"></select></label>
+<label>Category<select id="invCategory"><option>Furniture</option><option>Patient/Facility</option><option>Medical/Clinical Equipment</option><option>Electrical/IT</option><option>Other</option></select></label>
+<label>Quantity<input id="invQty" type="number" min="0"></label>
+<label>Unit<input id="invUnit" placeholder="Nos/Set/Box"></label>
+<label>Batch / Serial No.<input id="invSerial"></label>
+<label>Date Received<input id="invReceivedDate" type="date"></label>
+<label>Received From / Source<input id="invSource"></label>
+<label>Bill / Invoice No.<input id="invBill"></label>
+<label>Received Value<input id="invValue" type="number" min="0"></label>
+<label>Location / Room<input id="invLocation"></label>
+<label>Condition<select id="invCondition"><option>Working</option><option>Breakdown</option><option>Under Repair</option><option>Condemned</option><option>Not in Use</option></select></label>
+<label>Breakdown Date<input id="invBreakdownDate" type="date"></label>
+<label>Repair Date<input id="invRepairDate" type="date"></label>
+<label>Repair Details<input id="invRepairDetails"></label>
+<label>Condemnation Date<input id="invCondemnDate" type="date"></label>
+<label style="grid-column:1/-1">Remarks<textarea id="invRemarks"></textarea></label>
+</div>
+<div class="section-actions">
+<button class="btn primary" onclick="saveInventory()">💾 Save</button>
+<button class="btn" onclick="clearInventory()">➕ New / Clear</button>
+<button class="btn" onclick="addInventoryItem()">➕ Add New Item</button>
+<button class="btn" onclick="inventoryReport()">📊 Report</button>
+<button class="btn" onclick="printInventory()">🖨️ Print / PDF</button>
+</div>
+<div id="inventoryReport" style="overflow:auto;margin-top:15px"></div>
+</section>
+
+<script id="inventory-v44">
+(function(){
+const K="hsc_inventory_v44", IK="hsc_inventory_items_v44", defaults=['Chair', 'Table', 'Office Table', 'Patient Examination Table', 'Bench', 'Almira', 'Rack', 'Stool', 'Bed', 'Bedside Table', 'Bucket', 'Mug', 'Dustbin', 'Curtain', 'Mattress', 'Pillow', 'Bed Sheet', 'Blanket', 'Water Container', 'BP Apparatus', 'Stethoscope', 'Weighing Machine', 'Infant Weighing Machine', 'Pulse Oximeter', 'Glucometer', 'Thermometer', 'Examination Light', 'Nebulizer', 'Autoclave/Sterilizer', 'Oxygen Cylinder', 'Oxygen Concentrator', 'Emergency Kit', 'Computer', 'Printer', 'UPS', 'Inverter', 'Fan', 'Cooler', 'Refrigerator', 'Air Conditioner', 'CCTV', 'Tablet', 'Mobile Phone'];
+const $=id=>document.getElementById(id);
+function data(){return JSON.parse(localStorage.getItem(K)||"[]")}
+function put(a){localStorage.setItem(K,JSON.stringify(a))}
+function itemList(){let a=JSON.parse(localStorage.getItem(IK)||"null");if(!Array.isArray(a)){a=defaults.slice();localStorage.setItem(IK,JSON.stringify(a))}return a}
+function populate(){const s=$("invItemName");if(!s)return;s.innerHTML='<option value="">Select Item</option>'+itemList().map(x=>'<option>'+x+'</option>').join("")}
+window.addInventoryItem=function(){const n=prompt("नए सामान का नाम लिखें:");if(!n)return;let a=itemList();if(!a.includes(n.trim()))a.push(n.trim());localStorage.setItem(IK,JSON.stringify(a));populate();$("invItemName").value=n.trim()}
+window.saveInventory=function(){
+const name=$("invItemName").value;if(!name){alert("Item Name चुनें");return}
+let a=data(),id=$("invEditId").value||String(Date.now());
+const r={id,name,category:$("invCategory").value,qty:$("invQty").value,unit:$("invUnit").value,serial:$("invSerial").value,receivedDate:$("invReceivedDate").value,source:$("invSource").value,bill:$("invBill").value,value:$("invValue").value,location:$("invLocation").value,condition:$("invCondition").value,breakdownDate:$("invBreakdownDate").value,repairDate:$("invRepairDate").value,repairDetails:$("invRepairDetails").value,condemnDate:$("invCondemnDate").value,remarks:$("invRemarks").value};
+let i=a.findIndex(x=>x.id===id);if(i>=0)a[i]=r;else a.push(r);put(a);clearInventory();inventoryReport();alert("Inventory saved")}
+window.clearInventory=function(){["invEditId","invQty","invUnit","invSerial","invReceivedDate","invSource","invBill","invValue","invLocation","invBreakdownDate","invRepairDate","invRepairDetails","invCondemnDate","invRemarks"].forEach(id=>$(id).value="");$("invItemName").value="";$("invCondition").value="Working"}
+window.editInventory=function(id){const r=data().find(x=>x.id===id);if(!r)return;$("invEditId").value=r.id;const m={invItemName:"name",invCategory:"category",invQty:"qty",invUnit:"unit",invSerial:"serial",invReceivedDate:"receivedDate",invSource:"source",invBill:"bill",invValue:"value",invLocation:"location",invCondition:"condition",invBreakdownDate:"breakdownDate",invRepairDate:"repairDate",invRepairDetails:"repairDetails",invCondemnDate:"condemnDate",invRemarks:"remarks"};Object.keys(m).forEach(k=>$(k).value=r[m[k]]||"");}
+window.deleteInventory=function(id){if(confirm("यह entry delete करें?")){put(data().filter(x=>x.id!==id));inventoryReport()}}
+window.inventoryReport=function(){let a=data(),h='<h3>Inventory Report</h3><table border="1" style="border-collapse:collapse;width:100%"><tr><th>Item</th><th>Qty</th><th>Category</th><th>Batch/Serial</th><th>Received</th><th>Source</th><th>Location</th><th>Condition</th><th>Breakdown</th><th>Repair</th><th>Condemn</th><th>Action</th></tr>';a.forEach(r=>h+='<tr><td>'+r.name+'</td><td>'+r.qty+' '+r.unit+'</td><td>'+r.category+'</td><td>'+r.serial+'</td><td>'+r.receivedDate+'</td><td>'+r.source+'</td><td>'+r.location+'</td><td>'+r.condition+'</td><td>'+r.breakdownDate+'</td><td>'+r.repairDate+'</td><td>'+r.condemnDate+'</td><td><button onclick="editInventory(\''+r.id+'\')">Edit</button> <button onclick="deleteInventory(\''+r.id+'\')">Delete</button></td></tr>');$("inventoryReport").innerHTML=h+'</table>'}
+window.printInventory=function(){let a=data();let h='<html><head><title>Inventory Register</title><style>@page{size:A4 landscape;margin:8mm}body{font-family:Arial;font-size:9px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #222;padding:3px}</style></head><body><h2>Inventory Register — Ayushman Arogya Mandir Dharampur</h2><table><tr><th>Item</th><th>Qty</th><th>Category</th><th>Batch/Serial</th><th>Date Received</th><th>Received From</th><th>Bill</th><th>Location</th><th>Condition</th><th>Breakdown</th><th>Repair</th><th>Condemn</th><th>Remarks</th></tr>';a.forEach(r=>h+='<tr><td>'+r.name+'</td><td>'+r.qty+' '+r.unit+'</td><td>'+r.category+'</td><td>'+r.serial+'</td><td>'+r.receivedDate+'</td><td>'+r.source+'</td><td>'+r.bill+'</td><td>'+r.location+'</td><td>'+r.condition+'</td><td>'+r.breakdownDate+'</td><td>'+r.repairDate+'</td><td>'+r.condemnDate+'</td><td>'+r.remarks+'</td></tr>');h+='</table></body></html>';let w=open("","_blank");w.document.write(h);w.document.close();w.print()}
+document.addEventListener("DOMContentLoaded",()=>{populate();inventoryReport()})
+})();
+</script>
 </body></html>
 
 <style id="v43-landscape-register">
