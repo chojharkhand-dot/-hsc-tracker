@@ -2272,3 +2272,95 @@ try{rfReset();rfReportUI()}catch(e){console.error("Referral init",e)}
 })();
 </script>
 </body></html>
+
+<style id="v43-landscape-register">
+@media print {
+  @page { size: A4 landscape; margin: 6mm; }
+  .consumption-print, .consumption-print table { width:100% !important; }
+  .consumption-print table { border-collapse:collapse !important; font-size:8px !important; }
+  .consumption-print th,.consumption-print td { border:1px solid #222 !important; padding:2px !important; text-align:center !important; }
+  .consumption-print th:first-child,.consumption-print td:first-child { text-align:left !important; min-width:38mm !important; }
+}
+</style>
+<script>
+(function(){
+  function txt(id){const e=document.getElementById(id);return e?(e.value||"").trim():"";}
+  window.getHindiFollowup=function(rec,type){
+    const n=rec&&(rec.name||rec.patient||rec.mother)||txt("alertName");
+    const age=rec&&(rec.age||rec.patientAge);
+    const village=rec&&(rec.village||rec.tola)||txt("alertVillage");
+    const bp=rec&&(rec.bp||rec.BP);
+    const rbs=rec&&(rec.rbs||rec.RBS);
+    const lmp=rec&&(rec.lmp||rec.LMP);
+    const edd=rec&&(rec.edd||rec.EDD);
+    const lines=[];
+    if(n) lines.push("मरीज का नाम: "+n);
+    if(age) lines.push("उम्र: "+age+" वर्ष");
+    if(village) lines.push("गाँव/टोला: "+village);
+    const t=(type||"").toUpperCase();
+    if(t==="NCD"){
+      lines.push("फॉलो-अप का कारण: उच्च रक्तचाप/मधुमेह (NCD) की नियमित जाँच");
+      if(bp) lines.push("पिछला BP: "+bp);
+      if(rbs) lines.push("पिछला रक्त शर्करा: "+rbs);
+      lines.push("इस फॉलो-अप में: BP/रक्त शर्करा जाँचें, दवा नियमित लेने की जानकारी लें, वर्तमान शिकायत पूछें और नियंत्रण की स्थिति देखें।");
+      lines.push("यदि BP/शुगर बहुत अधिक हो या चेतावनी के लक्षण हों तो चिकित्सकीय परामर्श/रेफरल करें।");
+    } else if(t==="ANC" || t==="HRP"){
+      lines.push("फॉलो-अप का कारण: गर्भावस्था की जाँच");
+      if(lmp) lines.push("LMP: "+lmp);
+      if(edd) lines.push("अनुमानित प्रसव तिथि (EDD): "+edd);
+      lines.push("इस फॉलो-अप में: BP, वजन, Hb/आवश्यक जाँच, भ्रूण की स्थिति और गर्भावस्था से जुड़ी शिकायतें देखें।");
+      if(t==="HRP") lines.push("यह उच्च जोखिम गर्भावस्था है—खतरे के लक्षणों की जाँच करें और आवश्यकता होने पर तुरंत रेफरल करें।");
+      else lines.push("अगली ANC जाँच की तारीख/समय बताकर आवश्यक दवाएँ एवं सलाह दें।");
+    } else if(t==="TB"){
+      lines.push("फॉलो-अप का कारण: क्षय रोग (TB) की निगरानी");
+      lines.push("इस फॉलो-अप में: दवा नियमित लेने, खाँसी/बुखार/वजन तथा अन्य लक्षणों की समीक्षा करें और निर्धारित जाँच/उपचार की स्थिति देखें।");
+    } else if(t==="REFERRAL"){
+      lines.push("फॉलो-अप का कारण: रेफरल के बाद मरीज की स्थिति जानना");
+      lines.push("पूछें कि मरीज किस स्वास्थ्य संस्था में गया, वहाँ क्या जाँच/उपचार मिला, वर्तमान स्थिति कैसी है और आगे की सलाह क्या दी गई।");
+    } else if(t==="DELIVERY" || t==="HBNC"){
+      lines.push("फॉलो-अप का कारण: प्रसव के बाद माँ एवं नवजात की देखभाल");
+      lines.push("माँ का रक्तस्राव, बुखार/दर्द तथा नवजात का दूध पीना, तापमान और खतरे के लक्षण देखें। आवश्यकता होने पर तत्काल रेफरल करें।");
+    } else if(t==="ELDERLY" || t==="PALLIATIVE"){
+      lines.push("फॉलो-अप का कारण: बुजुर्ग/पैलिएटिव देखभाल");
+      lines.push("दर्द, दैनिक कार्य करने की क्षमता, वर्तमान लक्षण, दवा और घर पर देखभाल की आवश्यकता की समीक्षा करें।");
+    } else {
+      lines.push("फॉलो-अप का कारण: "+(type||"नियमित स्वास्थ्य फॉलो-अप"));
+      lines.push("मरीज की वर्तमान शिकायत, पिछली जाँच, उपचार/दवा और आगे की आवश्यकता की समीक्षा करें।");
+    }
+    return "<div>"+lines.map(x=>"<div>"+x.replace(/&/g,"&amp;").replace(/</g,"&lt;")+"</div>").join("")+"</div>";
+  };
+
+  // Override alert message with detailed Hindi follow-up content.
+  window.makeAlertMessage=function(){
+    const type=txt("alertType"), name=txt("alertName"), village=txt("alertVillage"),
+          date=txt("alertDate"), time=txt("alertTime"), extra=txt("alertDetails");
+    const pools={ANC:S.anc||[],HRP:S.anc||[],NCD:S.patients||[],TB:S.tb||[],Referral:S.referrals||[],
+      Delivery:S.deliveries||[],HBNC:S.deliveries||[],Elderly:S.elderly||[],Palliative:S.palliative||[]};
+    const pool=pools[type]||[];
+    const rec=pool.find(x=>String(x.name||x.patient||x.mother||"").trim().toLowerCase()===name.toLowerCase())||{};
+    const tmp=document.createElement("div");
+    tmp.innerHTML=getHindiFollowup(rec,type);
+    let msg="🔔 स्वास्थ्य फॉलो-अप सूचना\n"+(tmp.innerText||"");
+    if(date) msg+="\nफॉलो-अप की तारीख: "+date;
+    if(time) msg+="\nसमय: "+time;
+    if(extra) msg+="\nअतिरिक्त सूचना: "+extra;
+    msg+="\n\nकेंद्र — आयुष्मान आरोग्य मंदिर, धरमपुर, लिट्टीपाड़ा (पाकुड़)";
+    const out=document.getElementById("alertMessage"); if(out) out.value=msg;
+  };
+
+  // Build a true month matrix: item names vertical, days horizontal.
+  window.buildConsumptionLandscape=function(items, days, title){
+    items=items||[]; days=days||31;
+    let h='<div class="consumption-print"><h2>'+title+'</h2><table><thead><tr><th>Medicine / Diagnostic Name</th><th>Opening</th>';
+    for(let d=1;d<=days;d++) h+='<th>'+d+'</th>';
+    h+='<th>Received</th><th>Total Consumption</th><th>Closing</th></tr></thead><tbody>';
+    items.forEach((it,i)=>{
+      h+='<tr><td>'+String(it.name||it.test||"").replace(/</g,"&lt;")+'</td><td>'+(it.opening||0)+'</td>';
+      for(let d=1;d<=days;d++) h+='<td>'+(it.daily?.[d]||it[d]||0)+'</td>';
+      h+='<td>'+(it.received||0)+'</td><td>'+(it.total||0)+'</td><td>'+(it.closing||0)+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+    return h;
+  };
+})();
+</script>
