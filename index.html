@@ -79,7 +79,9 @@ body.report-print-mode #printArea{display:block!important;position:static!import
  <div class="head"><div><div class="title">🏥 HSC Tracker</div><div class="sub">Daily • Monthly • Patient • ANC • Stock • Activities • Reports</div></div><div id="clock"></div></div>
  <nav id="nav">
   <button class="active" data-v="dashboard">Dashboard</button><button data-v="daily">Daily</button><button data-v="patient">OPD/Patient</button><button data-v="anc">ANC/HRP</button><button data-v="ncd">❤️ NCD</button><button data-v="referral">🔴 Referral</button><button data-v="tb">🫁 TB</button><button data-v="medicine">Medicine</button><button data-v="fpsupply">🟣 FP & Sahiya Supply</button><button data-v="diagnostic">Diagnostic</button><button data-v="activity">Activities</button><button data-v="jas">💰 JAS</button><button data-v="report">Reports</button><button data-v="alerts">🔔 Alerts</button><button data-v="village">🏘️ Village/Tola</button><button data-v="ri">💉 RI Schedule</button><button data-v="delivery">👶 Delivery/HBNC</button><button data-v="bulk">📥 Bulk Import</button><button data-v="elderly">👴 Elderly/Palliative</button><button data-v="medcons">💊 Medicine Consumption</button><button data-v="diagcons">🧪 Diagnostic Consumption</button><button data-v="linen">🧺 Linen</button><button data-v="movement">👥 Staff Movement</button><button data-v="indent">📋 Indent</button><button data-v="bmw">♻️ BMW</button><button data-v="sterilisation">🧼 Sterilisation</button><button data-v="quality">🔄 PDCA/CAPA</button><button data-v="kpiAuto">📊 KPI Dashboard</button><button data-v="backup">Backup/Settings</button>
- </nav>
+ 
+<button type="button" class="nav-btn" onclick="showSectionById('inventorySection')">🏥 Inventory Register</button>
+</nav>
 </header>
 <main>
 
@@ -2324,6 +2326,15 @@ window.inventoryReport=function(){let a=data(),h='<h3>Inventory Report</h3><tabl
 window.printInventory=function(){let a=data();let h='<html><head><title>Inventory Register</title><style>@page{size:A4 landscape;margin:8mm}body{font-family:Arial;font-size:9px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #222;padding:3px}</style></head><body><h2>Inventory Register — Ayushman Arogya Mandir Dharampur</h2><table><tr><th>Item</th><th>Qty</th><th>Category</th><th>Batch/Serial</th><th>Date Received</th><th>Received From</th><th>Bill</th><th>Location</th><th>Condition</th><th>Breakdown</th><th>Repair</th><th>Condemn</th><th>Remarks</th></tr>';a.forEach(r=>h+='<tr><td>'+r.name+'</td><td>'+r.qty+' '+r.unit+'</td><td>'+r.category+'</td><td>'+r.serial+'</td><td>'+r.receivedDate+'</td><td>'+r.source+'</td><td>'+r.bill+'</td><td>'+r.location+'</td><td>'+r.condition+'</td><td>'+r.breakdownDate+'</td><td>'+r.repairDate+'</td><td>'+r.condemnDate+'</td><td>'+r.remarks+'</td></tr>');h+='</table></body></html>';let w=open("","_blank");w.document.write(h);w.document.close();w.print()}
 document.addEventListener("DOMContentLoaded",()=>{populate();inventoryReport()})
 })();
+</script>
+
+<script id="inventory-navigation-v46">
+window.showSectionById=function(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.style.display='block';
+  el.scrollIntoView({behavior:'smooth',block:'start'});
+};
 </script>
 </body></html>
 
