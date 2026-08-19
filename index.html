@@ -452,6 +452,8 @@ body.report-print-mode #printArea{display:block!important;position:static!import
         <option>HBNC</option><option>RI</option><option>JAS</option><option>Family Planning</option><option>Other</option>
       </select>
     </div>
+    <div class="field"><label>Recipient / किसे Alert भेजना है</label><select id="alertRecipient"><option value="">— नाम चुनें —</option></select></div>
+    <div class="field"><label>➕ नया Recipient जोड़ें</label><div style="display:flex;gap:6px"><input id="alertNewName" placeholder="नाम"><input id="alertNewMobile" inputmode="numeric" placeholder="Mobile"><button type="button" class="btn small" onclick="addAlertRecipient()">Add</button></div></div>
     <div class="field"><label>Patient / Person Name</label><input id="alertName"></div>
     <div class="field"><label>Mobile Number</label><input id="alertMobile" inputmode="numeric"></div>
     <div class="field"><label>Village / Facility</label><input id="alertVillage"></div>
@@ -464,8 +466,8 @@ body.report-print-mode #printArea{display:block!important;position:static!import
     <button type="button" class="btn" onclick="sendAlertWhatsApp()">🟢 WhatsApp</button>
     <button type="button" class="btn" onclick="sendAlertSMS()">💬 Text Message</button>
   </div>
-  <div class="field" style="margin-top:10px"><label>Generated Message</label><textarea id="alertMessage" rows="8" readonly></textarea></div>
-  <small style="color:#666">WhatsApp/Text button message को तैयार करके आपके फोन के संबंधित app में खोलेगा। बिना user action के WhatsApp group में automatic भेजने के लिए official WhatsApp Business/API की जरूरत होगी।</small>
+  <div class="field" style="margin-top:10px"><label>Generated Message</label><textarea id="alertMessage" rows="8" placeholder="यहाँ संदेश अपने अनुसार बदल भी सकते हैं।"></textarea></div>
+  <small style="color:#666">Recipient list में ANC, HRP, NCD, Referral, TB और अन्य sections में पहले से दर्ज नाम/mobile अपने-आप दिखेंगे। नया नाम ऊपर Add से जोड़ सकते हैं। संदेश हिंदी में अपने-आप बनेगा और भेजने से पहले आप उसे बदल सकते हैं। WhatsApp/Text button message को तैयार करके आपके फोन के संबंधित app में खोलेगा। बिना user action के WhatsApp group में automatic भेजने के लिए official WhatsApp Business/API की जरूरत होगी।</small>
 </section>
 
 <section id="aiClinical" class="card" style="margin-top:16px">
@@ -548,7 +550,8 @@ $("dashDate").textContent=new Date().toLocaleDateString("hi-IN",{weekday:"long",
 const defaultState={daily:[],patients:[],anc:[],med:[],meduse:[],kits:[],kituse:[],acts:[],villages:[],ri:[],deliveries:[],fpStock:[],fpTx:[],jasReceipts:[],jasExpenses:[],referrals:[],elderly:[],palliative:[],linen:[],movements:[],indents:[],bmw:[],sterilisation:[],pdca:[],capa:[]};
 const EXCEL_MEDICINE_STOCK=[{"name": "Amoxycillin Oral Suspension IP 125 mg/5 ml (Ceemox)", "batch": "ADBS1058", "mfg": "2025-09-01", "expiry": "2027-02-01", "qty": 17, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Chloroquine Phosphate Oral Suspension IP 50 mg/5 ml", "batch": "L24/0412A", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 29, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Diphenhydramine Hydrochloride, Ammonium Chloride & Sodium Citrate Syrup (Cough Syrup)", "batch": "CEKS24042", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 43, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Oral Suspension IP", "batch": "L24/0407A", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 16, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Mefenamic Acid Oral Suspension", "batch": "JDL-3497", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 33, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin & Metronidazole Suspension (TOFF-M)", "batch": "MLS25283", "mfg": "2025-04-01", "expiry": "2027-03-01", "qty": 4, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Paracetamol Paediatric Suspension IP 125 mg (BIOCETAMOL-125, 60 ml)", "batch": "SPA251556", "mfg": "2025-08-01", "expiry": "2027-07-01", "qty": 80, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Albendazole Tablets IP", "batch": "CQU02ACA", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 76, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Allopurinol Tablets IP 100 mg (CGNOL-100)", "batch": "CT24251163B", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Amlodipine Tablets IP 5 mg", "batch": "SPAC26005", "mfg": "2026-01-01", "expiry": "2027-12-01", "qty": 400, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Amoxycillin Capsules IP 250 mg", "batch": "4172006", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 200, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ampicillin Injection IP 1 g", "batch": "K3190", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 20, "unit": "Vial", "source": "Excel 12-08-2026"}, {"name": "Atenolol Tablets IP 25 mg (Atenopress-25)", "batch": "SPA250926", "mfg": "2025-05-01", "expiry": "2027-04-01", "qty": 42, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Atorvastatin Tablets IP 10 mg", "batch": "15303124", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 100, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Azithromycin Tablets IP 250 mg", "batch": "61501124A", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 192, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Azithromycin Tablets IP 500 mg", "batch": "SPA250563", "mfg": "2025-03-01", "expiry": "2028-02-01", "qty": 133, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Budenase AQ Nasal Spray", "batch": "45A2843", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 5, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cefixime Tablets IP 200 mg", "batch": "14402324", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 90, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cefixime Tablets USP 400 mg", "batch": "T-3287", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 300, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cetirizine Tablets I.P. 10 mg", "batch": "11200924", "mfg": "2024-05-01", "expiry": "2027-04-01", "qty": 80, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Cholecalciferol Soft Gelatin Capsules USP (Cartiflex D3)", "batch": "AMS-0202", "mfg": "2025-03-01", "expiry": "2027-02-01", "qty": 39, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ciprofloxacin Hydrochloride Eye Drops IP (Cip Drop)", "batch": "M026C3B", "mfg": "2026-03-01", "expiry": "2028-02-01", "qty": 3, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ciprofloxacin Hydrochloride Tablets I.P. 500 mg", "batch": "CPFT24028", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 300, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Clotrimazole Cream I.P. 1% w/w", "batch": "180-150", "mfg": "2024-09-01", "expiry": "2026-08-01", "qty": 3, "unit": "Tube", "source": "Excel 12-08-2026"}, {"name": "Dexamethasone Sodium Phosphate Injection", "batch": "JDP-1348", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 50, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Diclofenac Sodium and Paracetamol Tablets I.P.", "batch": "11701624", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 24, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Dicyclomine Hydrochloride and Paracetamol Tablets", "batch": "19001424", "mfg": "2024-09-01", "expiry": "2027-08-01", "qty": 200, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Doxycycline Capsules I.P. 100 mg", "batch": "16201824", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 100, "unit": "Capsule", "source": "Excel 12-08-2026"}, {"name": "Erythromycin Stearate Tablets IP 500 mg (ERYCON-500)", "batch": "AGT50354", "mfg": "2025-03-01", "expiry": "2028-02-01", "qty": 500, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Griseofulvin Tablets IP 250 mg", "batch": "T-4624", "mfg": "2025-02-01", "expiry": "2027-01-01", "qty": 20, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen and Paracetamol Tablets IP", "batch": "15602324", "mfg": "2024-07-01", "expiry": "2027-06-01", "qty": 52, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Tablets I.P. 200 mg", "batch": "15300524", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 250, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ibuprofen Tablets I.P. 400 mg", "batch": "15402924", "mfg": "2024-11-01", "expiry": "2027-10-01", "qty": 108, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Levocetirizine Tablets IP", "batch": "SPA251624", "mfg": "2025-08-01", "expiry": "2027-07-01", "qty": 250, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Metformin Hydrochloride (SR) Tablets IP 1000 mg", "batch": "JDT-8551", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 40, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin and Ornidazole Tablets I.P.", "batch": "16002824", "mfg": "2024-11-01", "expiry": "2026-10-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Ofloxacin and Ornidazole Tablets I.P.", "batch": "16003024", "mfg": "2024-12-01", "expiry": "2026-11-01", "qty": 100, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Omeprazole and Domperidone Capsules IP", "batch": "15901224", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 364, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Ondansetron Tablets IP 4 mg", "batch": "18006030022261", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 100, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Oral Rehydration Salts IP (ORS)", "batch": "CHPLO-084", "mfg": "2025-06-01", "expiry": "2027-05-01", "qty": 121, "unit": "Packet", "source": "Excel 12-08-2026"}, {"name": "Paracetamol Tablets IP 650 mg (BIOCETAMOL-650)", "batch": "SPAC25068", "mfg": "2025-09-01", "expiry": "2028-08-01", "qty": 450, "unit": "Tablet", "source": "Excel 12-08-2026"}, {"name": "Permethrin Cream 5%", "batch": "JDO-1186", "mfg": "2024-10-01", "expiry": "2026-09-01", "qty": 11, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Povidone-Iodine Solution IP 5% w/v (Skydine)", "batch": "PS125258", "mfg": "2025-09-01", "expiry": "2027-08-01", "qty": 3, "unit": "Bottle", "source": "Excel 12-08-2026"}, {"name": "Ranitidine Tablets IP 150 mg", "batch": "10402024", "mfg": "2024-09-01", "expiry": "2026-08-01", "qty": 120, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "Vitamin A Paediatric Oral Solution IP", "batch": "MH0916", "mfg": "2025-02-01", "expiry": "2027-01-01", "qty": 20, "unit": "Unit", "source": "Excel 12-08-2026"}, {"name": "WIFS Junior (Ferrous Sulphate & Folic Acid Tablets IP)", "batch": "B250575", "mfg": "2025-04-01", "expiry": "2027-03-01", "qty": 640, "unit": "Unit", "source": "Excel 12-08-2026"}];
 function mergeExcelMedicineStock(){
-  if(!Array.isArray(S.med)) S.med=[];
+  if(!Array.isArray(S.alertRecipients)) S.alertRecipients=[];
+if(!Array.isArray(S.med)) S.med=[];
   let added=0;
   EXCEL_MEDICINE_STOCK.forEach(m=>{
     const exists=S.med.some(x=>String(x.name||"").trim().toLowerCase()===String(m.name).trim().toLowerCase() && String(x.batch||"").trim().toLowerCase()===String(m.batch).trim().toLowerCase());
@@ -2037,6 +2040,123 @@ try{rfReset();rfReportUI()}catch(e){console.error("Referral init",e)}
   ['ep','mc','dc','ln','sm','in','bw','st','q'].forEach(p=>{['Scope','Date','Month','Year'].forEach(s=>{const el=A(p+s);if(el)el.addEventListener('change',()=>{const f={ep:renderEP,mc:renderMedCons,dc:renderDiagCons,ln:renderLinen,sm:renderMovement,in:renderIndent,bw:renderBMW,st:renderSter,q:renderQuality}[p];if(f)f();});});});
   window.addEventListener('load',()=>{fillMed();fillDiagMaster();refreshIndentItems();});
 
+})();
+</script>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const gv=id=>($(id)?.value||"").trim();
+  const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const today0=new Date().toISOString().slice(0,10);
+  if(!Array.isArray(S.alertRecipients)) S.alertRecipients=[];
+  function save(){localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));}
+  function pushRec(name,mobile,category){
+    name=String(name||"").trim(); mobile=String(mobile||"").replace(/\D/g,""); category=String(category||"Other");
+    if(!name && !mobile) return;
+    const key=(mobile||name).toLowerCase();
+    if(!S.alertRecipients.some(x=>(x.mobile||x.name).toLowerCase()===key)) S.alertRecipients.push({name,mobile,category});
+  }
+  function collect(){
+    const out=[];
+    const add=(x,cat)=>{if(x&&((x.name||x.patient||x.mother)&& (x.mobile||x.phone))) pushRec(x.name||x.patient||x.mother,x.mobile||x.phone,cat);};
+    (S.patients||[]).forEach(x=>add(x,(x.ncd||x.condition||"NCD/Patient")));
+    (S.anc||[]).forEach(x=>add(x,x.hrp==="Yes"?"HRP":"ANC"));
+    (S.referrals||[]).forEach(x=>add(x,x.type||x.refType||"Referral"));
+    (S.tb||[]).forEach(x=>add(x,"TB"));
+    (S.deliveries||[]).forEach(x=>{if(x.mother)pushRec(x.mother,x.mobile||x.motherMobile,"Delivery/HBNC")});
+    (S.alertRecipients||[]).forEach(x=>{if(x.name||x.mobile) out.push(x)});
+    const seen=new Set();
+    return [...(S.alertRecipients||[]), ...out].filter(x=>{const k=(x.mobile||x.name||"").toLowerCase();if(!k||seen.has(k))return false;seen.add(k);return true});
+  }
+  function renderRecipients(){
+    if(!$('alertRecipient'))return;
+    collect();
+    const all=[...(S.alertRecipients||[])];
+    // Rebuild from all source records without persisting auto-discovered names.
+    const addTemp=(name,mobile,category)=>{if(!name&&!mobile)return;const k=(mobile||name).toLowerCase();if(!all.some(x=>(x.mobile||x.name||"").toLowerCase()===k))all.push({name,mobile,category})};
+    (S.patients||[]).forEach(x=>addTemp(x.name,x.mobile,x.ncd||x.condition||"NCD/Patient"));
+    (S.anc||[]).forEach(x=>addTemp(x.name,x.mobile,x.hrp==="Yes"?"HRP":"ANC"));
+    (S.referrals||[]).forEach(x=>addTemp(x.name,x.mobile,x.type||"Referral"));
+    (S.tb||[]).forEach(x=>addTemp(x.name,x.mobile,"TB"));
+    (S.deliveries||[]).forEach(x=>addTemp(x.mother,x.mobile||x.motherMobile,"Delivery/HBNC"));
+    $('alertRecipient').innerHTML='<option value="">— नाम चुनें —</option>'+all.filter(x=>x.name||x.mobile).map((x,i)=>`<option value="${i}" data-name="${esc(x.name||'')}" data-mobile="${esc(x.mobile||'')}" data-category="${esc(x.category||'Other')}">${esc(x.name||x.mobile)}${x.category?' — '+esc(x.category):''}${x.mobile?' — '+esc(x.mobile):''}</option>`).join('');
+    $('alertRecipient')._recipients=all;
+  }
+  window.addAlertRecipient=function(){
+    const name=gv('alertNewName'), mobile=gv('alertNewMobile');
+    if(!name||mobile.replace(/\D/g,'').length<10){alert('नाम और सही mobile number भरें।');return;}
+    S.alertRecipients.push({name,mobile:mobile.replace(/\D/g,''),category:'Saved Recipient'}); save();
+    $('alertNewName').value=''; $('alertNewMobile').value=''; renderRecipients(); alert('Recipient जोड़ दिया गया।');
+  };
+  if($('alertRecipient')) $('alertRecipient').addEventListener('change',function(){
+    const list=this._recipients||[]; const x=list[+this.value]; if(!x)return;
+    $('alertName').value=x.name||''; $('alertMobile').value=x.mobile||'';
+    if($('alertVillage')) $('alertVillage').value=$('alertVillage').value||'';
+  });
+  const hindi={
+    ANC:'ANC जांच/फॉलो-अप की सूचना', HRP:'उच्च जोखिम गर्भावस्था (HRP) फॉलो-अप की सूचना', NCD:'NCD फॉलो-अप/जांच की सूचना',
+    Delivery:'प्रसव से संबंधित फॉलो-अप की सूचना', Medicine:'दवा स्टॉक/दवा संबंधी सूचना', Diagnostic:'जांच/डायग्नोस्टिक संबंधी सूचना',
+    Referral:'रेफरल के बाद फॉलो-अप की सूचना', TB:'टीबी जांच/उपचार फॉलो-अप की सूचना', HBNC:'HBNC विजिट की सूचना', RI:'टीकाकरण सत्र/टीकाकरण की सूचना',
+    JAS:'JAS संबंधी सूचना', 'Family Planning':'परिवार नियोजन संबंधी सूचना', Other:'स्वास्थ्य सेवा संबंधी सूचना'
+  };
+  window.makeAlertMessage=function(){
+    const type=gv('alertType'), name=gv('alertName'), village=gv('alertVillage'), date=gv('alertDate'), time=gv('alertTime'), details=gv('alertDetails');
+    const lines=['🔔 स्वास्थ्य सूचना — आयुष्मान आरोग्य मंदिर धरमपुर','विषय: '+(hindi[type]||type)];
+    if(name)lines.push('नाम: '+name); if(village)lines.push('गाँव/केंद्र: '+village); if(date)lines.push('तारीख: '+date); if(time)lines.push('समय: '+time); if(details)lines.push('विवरण: '+details);
+    lines.push('कृपया आवश्यक जांच/फॉलो-अप समय पर करें।','केंद्र — धरमपुर, प्रखंड — लिट्टीपाड़ा (पाकुड़)');
+    $('alertMessage').value=lines.join('\n');
+  };
+  function recipientMobile(){return gv('alertMobile').replace(/\D/g,'')}
+  window.sendAlertWhatsApp=function(){if(!gv('alertMessage'))window.makeAlertMessage();const msg=gv('alertMessage'),m=recipientMobile();window.open((m?'https://wa.me/'+(m.length===10?'91'+m:m):'https://wa.me/')+'?text='+encodeURIComponent(msg),'_blank')};
+  window.sendAlertSMS=function(){if(!gv('alertMessage'))window.makeAlertMessage();const msg=gv('alertMessage'),m=recipientMobile();window.location.href='sms:'+(m||'')+'?body='+encodeURIComponent(msg)};
+  renderRecipients();
+
+  // --- AI Clinical Assistant: symptom-based knowledge suggestions (review before use) ---
+  const medRules=[
+    {rx:/fever|बुखार/i, label:'बुखार', meds:['Paracetamol (symptomatic fever/pain relief)'], tests:['Temperature; consider malaria/RDT or other fever testing according to local epidemiology and clinical assessment'], note:'बुखार का कारण पहचानना जरूरी है; persistent/high fever, danger signs या pregnancy में clinical assessment करें.'},
+    {rx:/diarr|loose stool|दस्त|पतला पैखाना/i, label:'दस्त', meds:['ORS / Oral Rehydration Solution','Zinc — बच्चों में age-appropriate protocol के अनुसार'], tests:['Hydration assessment; stool testing only when clinically indicated'], note:'खून वाले दस्त, severe dehydration, persistent vomiting या बहुत छोटे बच्चे में तत्काल clinical assessment.'},
+    {rx:/vomit|उल्टी/i, label:'उल्टी', meds:['ORS in small frequent amounts if able to drink'], tests:['Hydration/electrolyte assessment when clinically indicated'], note:'बार-बार उल्टी, dehydration, altered sensorium या severe abdominal pain में referral/assessment.'},
+    {rx:/headache|सिर दर्द/i, label:'सिर दर्द', meds:['Paracetamol (symptomatic pain relief, if no contraindication)'], tests:['BP measurement; further tests based on examination'], note:'अचानक बहुत तेज सिरदर्द, neurological deficit, fever with neck stiffness या very high BP में urgent assessment.'},
+    {rx:/allerg|itch|खुजली|एलर्जी/i, label:'एलर्जी/खुजली', meds:['Cetirizine or another suitable antihistamine — clinician review, age/pregnancy considerations'], tests:['Usually clinical; further testing if trigger/condition unclear'], note:'चेहरा/जीभ सूजना, सांस में दिक्कत या anaphylaxis signs में emergency care.'},
+    {rx:/cough|खांसी/i, label:'खांसी', meds:['Symptomatic treatment according to age and cause; avoid routine antibiotics without indication'], tests:['If cough ≥2 weeks or TB symptoms: TB screening/NAAT as per programme protocol'], note:'सांस फूलना, low oxygen, blood in sputum या severe illness में urgent assessment.'},
+    {rx:/burning urine|dysuria|पेशाब.*जलन|urine.*burn/i, label:'पेशाब में जलन', meds:['Symptomatic care after assessment; do not start antibiotics solely from symptoms in the assistant'], tests:['Urine routine/appropriate testing; culture when indicated'], note:'Pregnancy, fever/flank pain, male UTI symptoms or recurrent symptoms need clinician assessment.'},
+    {rx:/abdominal pain|पेट दर्द/i, label:'पेट दर्द', meds:['Avoid masking severe/unclear abdominal pain with automatic medicine suggestions'], tests:['Clinical abdominal examination; tests guided by findings'], note:'Severe pain, guarding, persistent vomiting, GI bleeding or pregnancy-related pain needs urgent assessment.'},
+    {rx:/cold|runny nose|सर्दी|नाक बहना/i, label:'सर्दी/नाक बहना', meds:['Paracetamol for pain/fever if appropriate','Saline nasal care'], tests:['Usually clinical; test if indicated by epidemiology/symptoms'], note:'Breathing difficulty or persistent/high fever requires assessment.'}
+  ];
+  function parseBP2(x){const m=String(x).match(/(\d{2,3})\s*[/\-]\s*(\d{2,3})/);return m?[+m[1],+m[2]]:null}
+  function aiKnowledge(){
+    const q=gv('aiQuery'), age=+gv('aiAge')||0, sex=gv('aiSex'), bp=parseBP2(gv('aiBP')), lmp=gv('aiLMP'), rbs=+gv('aiRBS')||0, fbs=+gv('aiFBS')||0, ppbs=+gv('aiPPBS')||0;
+    const found=medRules.filter(r=>r.rx.test(q)); let cat='Other'; const notes=[], tests=[], meds=[];
+    if(lmp){cat='ANC';tests.push('ANC examination and routine ANC investigations according to gestational age');notes.push('LMP से EDD पहले से calculate होगा; pregnancy में medicines केवल applicable guideline/clinician review के बाद.')}
+    if(bp&&(bp[0]>=140||bp[1]>=90)){cat=lmp?'HRP':'NCD';tests.push('Repeat BP correctly; assess for hypertension and target-organ symptoms');notes.push('Elevated BP को repeat/confirm करें; pregnancy में HRP/hypertensive disorder assessment आवश्यक है.')}
+    if(fbs>=126||ppbs>=200||rbs>=200){cat='NCD';tests.push('Confirm diabetes status with appropriate glucose testing/HbA1c where applicable');notes.push('Single abnormal glucose value से treatment शुरू न करें; clinical confirmation आवश्यक है.')}
+    if(/cough/i.test(q)&&/(2 week|2 weeks|14 day|persistent)/i.test(q)){cat='TB';tests.push('TB screening/NAAT or other programme-recommended diagnostic');notes.push('2 सप्ताह या अधिक खांसी में TB screening जरूरी है.')}
+    found.forEach(r=>{r.meds.forEach(m=>meds.push(m));r.tests.forEach(t=>tests.push(t));notes.push(r.note)});
+    if(!found.length&&!bp&&!rbs&&!fbs&&!ppbs&&!lmp)notes.push('दिए गए symptoms/values से specific medicine चुनना सुरक्षित नहीं है; examination और diagnosis के बाद treatment तय करें.');
+    const uniq=a=>[...new Set(a)];
+    return {q,age,sex,bp,lmp,cat,meds:uniq(meds),tests:uniq(tests),notes:uniq(notes)};
+  }
+  window.aiAnalyze=function(){
+    const a=aiKnowledge(); window.__aiKnowledge=a;
+    const medHtml=a.meds.length?a.meds.map((m,i)=>`<li><label><input type="checkbox" class="aiMedPick" data-i="${i}" checked> ${esc(m)}</label></li>`).join(''):'<li>Specific medicine suggestion नहीं — diagnosis/clinical assessment पहले.</li>';
+    const testHtml=a.tests.length?a.tests.map(t=>`<li>${esc(t)}</li>`).join(''):'<li>Clinically indicated tests चुनें.</li>';
+    const noteHtml=a.notes.map(n=>`<li>${esc(n)}</li>`).join('');
+    const edd= a.lmp ? (()=>{const d=new Date(a.lmp+'T00:00:00');d.setDate(d.getDate()+280);return d.toISOString().slice(0,10)})() : '';
+    $('aiResult').innerHTML=`<div class="card"><b>Suggested category:</b> ${esc(a.cat)} ${edd?`<br><b>EDD:</b> ${esc(edd)}`:''}</div><div class="card"><h3>💊 Possible medicine options — Knowledge / Review only</h3><ul>${medHtml}</ul><p class="muted">ये automatic prescription नहीं हैं। उम्र, pregnancy, allergy, comorbidity, diagnosis और current treatment देखकर clinician final medicine तय करे.</p></div><div class="card"><h3>🧪 Suggested tests</h3><ul>${testHtml}</ul></div><div class="card"><h3>⚠️ Clinical notes</h3><ul>${noteHtml}</ul></div>`;
+  };
+  window.aiAddSelected=function(){
+    const a=window.__aiKnowledge||aiKnowledge(), name=gv('aiName'); if(!name){alert('Patient Name भरें।');return}
+    const meds=[...document.querySelectorAll('.aiMedPick:checked')].map(x=>a.meds[+x.dataset.i]).filter(Boolean);
+    let cat=a.cat; const rec={date:today0,name,guardian:gv('aiGuardian'),age:gv('aiAge'),sex:gv('aiSex'),mobile:gv('aiMobile'),abhaid:gv('aiAbha'),aadhaar:gv('aiAadhaar'),village:gv('aiVillage'),tola:'',condition:cat,diagnosis:cat,bp:gv('aiBP'),rbs:gv('aiRBS')||gv('aiFBS')||gv('aiPPBS'),medicine:meds.join('; '),remark:'AI Clinical Assistant - confirmed after review'};
+    if(!Array.isArray(S.patients))S.patients=[]; S.patients.push(rec); save(); render(); alert('Patient category और reviewed suggestions के साथ record add हो गया।');
+  };
+  window.aiPrescription=function(){
+    const a=window.__aiKnowledge||aiKnowledge(), meds=[...document.querySelectorAll('.aiMedPick:checked')].map(x=>a.meds[+x.dataset.i]).filter(Boolean);
+    const w=window.open('','_blank');if(!w){alert('Pop-up blocked.');return} const lines=meds.length?meds.map(m=>`<li>${esc(m)}</li>`).join(''):'<li>कोई medicine auto-selected नहीं।</li>'; const tests=a.tests.map(t=>`<li>${esc(t)}</li>`).join('');
+    w.document.write(`<html><head><title>Prescription</title><style>body{font-family:Arial;padding:30px;color:#111}table{width:100%;border-collapse:collapse}td,th{border:1px solid #999;padding:8px}</style></head><body><h2 style="text-align:center">PRESCRIPTION</h2><div style="text-align:center">Ayushman Arogya Mandir Dharampur, Littipara, Pakur</div><hr><p><b>Patient:</b> ${esc(gv('aiName'))} &nbsp; <b>Age:</b> ${esc(gv('aiAge'))} &nbsp; <b>Gender:</b> ${esc(gv('aiSex'))}</p><p><b>Father/Spouse:</b> ${esc(gv('aiGuardian'))} &nbsp; <b>Mobile:</b> ${esc(gv('aiMobile'))}</p><p><b>Village:</b> ${esc(gv('aiVillage'))}</p><p><b>Symptoms:</b> ${esc(a.q)}</p><p><b>Recorded values:</b> BP ${esc(gv('aiBP'))}, RBS ${esc(gv('aiRBS'))}, FBS ${esc(gv('aiFBS'))}, PPBS ${esc(gv('aiPPBS'))}</p><h3>Possible medicine options (clinician to confirm)</h3><ul>${lines}</ul><h3>Suggested tests</h3><ul>${tests||'<li>As clinically indicated</li>'}</ul><p><b>Note:</b> This document is a clinical decision-support draft. Final diagnosis, medicine, dose, duration and contraindication check must be completed by the clinician.</p><div style="margin-top:70px;text-align:right"><b>Community Health Officer</b><br>Rahul Sharma<br>AAM Dharampur</div><button onclick="window.print()">Print / Save PDF</button></body></html>`);w.document.close();
+  };
+  if($('aiQuery'))$('aiQuery').addEventListener('input',()=>{});
 })();
 </script>
 </body></html>
