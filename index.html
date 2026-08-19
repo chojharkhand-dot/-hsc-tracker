@@ -60,6 +60,19 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 .modal-card{background:#fff;color:#111;border-radius:14px;max-width:720px;width:100%;max-height:90vh;overflow:auto;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
 .modal-card label{display:block;font-weight:600;margin:10px 0}.modal-card input,.modal-card textarea{display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;border:1px solid #ccc;border-radius:8px}
 </style>
+
+<style>
+.ai-followup-card{border:1px solid #d0d5dd;border-radius:12px;padding:12px;margin-top:10px;background:#fff}
+.landscape-preview{overflow:auto}
+.reg-landscape{border-collapse:collapse;width:max-content;min-width:100%;font-size:11px}
+.reg-landscape th,.reg-landscape td{border:1px solid #333;padding:4px 6px;text-align:center;white-space:nowrap}
+.reg-landscape th:first-child,.reg-landscape td:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:1;min-width:160px}
+.reg-landscape th{background:#f1f5f9}
+@media print{
+  .no-print{display:none!important}
+  .reg-landscape th:first-child,.reg-landscape td:first-child{position:static}
+}
+</style>
 </head>
 <body>
 <header>
@@ -1770,23 +1783,26 @@ try{rfReset();rfReportUI()}catch(e){console.error("Referral init",e)}
 (function(){
   function gv(id){var e=document.getElementById(id); return e?e.value.trim():"";}
   window.makeAlertMessage=function(){
-    var type=gv("alertType"), name=gv("alertName"), mob=gv("alertMobile"), village=gv("alertVillage");
-    var date=gv("alertDate"), time=gv("alertTime"), details=gv("alertDetails");
-    var labels={
-      ANC:"ANC check-up / follow-up alert",
-      HRP:"High Risk Pregnancy (HRP) follow-up alert",
-      NCD:"NCD (HTN/DM) follow-up alert",
-      Delivery:"Delivery / expected delivery alert",
-      Medicine:"Medicine stock / medicine-related alert",
-      Diagnostic:"Diagnostic test / report alert",
-      Referral:"Referral follow-up alert",
-      TB:"TB follow-up alert",
-      HBNC:"HBNC follow-up alert",
-      RI:"RI / Immunization session alert",
-      JAS:"Jan Arogya Samiti (JAS) alert",
-      "Family Planning":"Family Planning follow-up / supply alert",
-      Other:"Health programme alert"
-    };
+    const type=gv("alertType"),name=gv("alertName"),village=gv("alertVillage"),date=gv("alertDate"),time=gv("alertTime"),details=gv("alertDetails");
+    const lines=["🔔 स्वास्थ्य सूचना — आयुष्मान आरोग्य मंदिर, धरमपुर","विषय: "+(hindi[type]||type)];
+    if(name)lines.push("मरीज/व्यक्ति का नाम: "+name);
+    if(village)lines.push("गाँव/केंद्र: "+village);
+    if(date)lines.push("फॉलो-अप/कार्य की तारीख: "+date);
+    if(time)lines.push("समय: "+time);
+
+    let rec=null;
+    const pools={ANC:S.anc||[],HRP:S.anc||[],NCD:S.patients||[],TB:S.tb||[],Referral:S.referrals||[],Delivery:S.deliveries||[],HBNC:S.deliveries||[],Elderly:S.elderly||[],Palliative:S.palliative||[]};
+    const pool=pools[type]||[];
+    rec=pool.find(x=>String(x.name||x.patient||x.mother||"").trim().toLowerCase()===name.toLowerCase());
+    if(rec){
+      const detail=getHindiFollowup(rec,type);
+      const tmp=document.createElement("div");tmp.innerHTML=detail;
+      lines.push("फॉलो-अप में क्या करना है: "+(tmp.textContent||tmp.innerText||""));
+    }
+    if(details)lines.push("अतिरिक्त विवरण: "+details);
+    lines.push("कृपया समय पर आवश्यक जांच, उपचार या फॉलो-अप करें।","केंद्र — धरमपुर, प्रखंड — लिट्टीपाड़ा (पाकुड़)");
+    if($("alertMessage"))$("alertMessage").value=lines.join("\n");
+  };
     var lines=[
       "🔔 HSC Tracker Alert",
       "Type: "+(labels[type]||type)
@@ -2043,164 +2059,216 @@ try{rfReset();rfReportUI()}catch(e){console.error("Referral init",e)}
 })();
 </script>
 
+
 <script>
 (function(){
   const $=id=>document.getElementById(id);
   const gv=id=>($(id)?.value||"").trim();
   const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const today0=new Date().toISOString().slice(0,10);
-  if(!Array.isArray(S.alertRecipients)) S.alertRecipients=[];
-  function save(){localStorage.setItem("HSC_TRACKER_FINAL",JSON.stringify(S));}
-  function pushRec(name,mobile,category){
-    name=String(name||"").trim(); mobile=String(mobile||"").replace(/\D/g,""); category=String(category||"Other");
-    if(!name && !mobile) return;
-    const key=(mobile||name).toLowerCase();
-    if(!S.alertRecipients.some(x=>(x.mobile||x.name).toLowerCase()===key)) S.alertRecipients.push({name,mobile,category});
+  if(!Array.isArray(S.alertRecipients))S.alertRecipients=[];
+  window.save=window.save||function(){persist();};
+
+  // ---------- Alert recipients: shared localStorage/PWA-safe ----------
+  function addPerson(out,x,category){
+    if(!x||typeof x!=="object")return;
+    const name=x.name||x.patient||x.motherName||x.personName||x.staffName||x.staff||x.operator||"";
+    const mobile=x.mobile||x.phone||x.mobileNumber||x.motherMobile||x.contact||"";
+    if(name||mobile)out.push({name:String(name),mobile:String(mobile),category:category||x.category||x.condition||"Other"});
   }
-  function collect(){
+  function allRecipients(){
     const out=[];
-    const add=(x,cat)=>{
-      if(!x)return;
-      const name=x.name||x.patient||x.mother||x.staffName||x.staff||x.operator||x.person||'';
-      const mobile=x.mobile||x.phone||x.motherMobile||x.mobileNumber||'';
-      if(name||mobile) out.push({name,mobile,category:cat||x.category||x.condition||'Other'});
-    };
-    (S.patients||[]).forEach(x=>add(x,x.ncd||x.condition||'Patient'));
-    (S.anc||[]).forEach(x=>add(x,x.hrp==='Yes'?'HRP':'ANC'));
-    (S.referrals||[]).forEach(x=>add(x,x.type||x.refType||'Referral'));
-    (S.tb||[]).forEach(x=>add(x,'TB'));
-    (S.deliveries||[]).forEach(x=>add(x,'Delivery/HBNC'));
-    (S.elderly||[]).forEach(x=>add(x,'Elderly'));
-    (S.palliative||[]).forEach(x=>add(x,'Palliative'));
-    (S.movement||[]).forEach(x=>add(x,'Staff Movement'));
-    (S.alertRecipients||[]).forEach(x=>add(x,x.category||'Saved Recipient'));
-    return out;
-  }
-  function renderRecipients(){
-    if(!$('alertRecipient'))return;
-    const all=[]; const seen=new Set();
-    collect().forEach(x=>{
-      const key=(x.mobile||x.name||'').toString().toLowerCase().replace(/\s+/g,' ');
-      if(!key||seen.has(key))return; seen.add(key); all.push(x);
+    (S.patients||[]).forEach(x=>addPerson(out,x,x.ncd||x.condition||"Patient"));
+    (S.anc||[]).forEach(x=>addPerson(out,x,x.hrp==="Yes"?"HRP":"ANC"));
+    (S.referrals||[]).forEach(x=>addPerson(out,x,x.type||x.refType||"Referral"));
+    (S.tb||[]).forEach(x=>addPerson(out,x,"TB"));
+    (S.deliveries||[]).forEach(x=>addPerson(out,x,"Delivery/HBNC"));
+    (S.elderly||[]).forEach(x=>addPerson(out,x,"Elderly"));
+    (S.palliative||[]).forEach(x=>addPerson(out,x,"Palliative"));
+    (S.movement||[]).forEach(x=>addPerson(out,x,"Staff Movement"));
+    (S.alertRecipients||[]).forEach(x=>addPerson(out,x,x.category||"Saved Recipient"));
+    // Also scan common arrays so new future sections automatically contribute.
+    Object.keys(S||{}).forEach(k=>{
+      if(["patients","anc","referrals","tb","deliveries","elderly","palliative","movement","alertRecipients"].includes(k))return;
+      if(Array.isArray(S[k]))S[k].forEach(x=>addPerson(out,x,x?.category||k));
     });
-    $('alertRecipient').innerHTML='<option value="">— नाम चुनें —</option>'+all.map((x,i)=>`<option value="${i}" data-name="${esc(x.name||'')}" data-mobile="${esc(x.mobile||'')}" data-category="${esc(x.category||'Other')}">${esc(x.name||'नाम उपलब्ध नहीं')}${x.category?' — '+esc(x.category):''}${x.mobile?' — '+esc(x.mobile):' — मोबाइल नहीं'}</option>`).join('');
-    $('alertRecipient')._recipients=all;
+    const seen=new Set();
+    return out.filter(x=>{
+      const key=((x.mobile||"")+"|"+(x.name||"")).toLowerCase().replace(/\s+/g," ");
+      if(!key||seen.has(key))return false; seen.add(key); return true;
+    });
   }
-  window.addAlertRecipient=function(){
-    const name=gv('alertNewName'), mobile=gv('alertNewMobile');
-    if(!name||mobile.replace(/\D/g,'').length<10){alert('नाम और सही mobile number भरें।');return;}
-    S.alertRecipients.push({name,mobile:mobile.replace(/\D/g,''),category:'Saved Recipient'}); save();
-    $('alertNewName').value=''; $('alertNewMobile').value=''; renderRecipients(); alert('Recipient जोड़ दिया गया।');
+  window.renderRecipients=function(){
+    const sel=$("alertRecipient"); if(!sel)return;
+    const all=allRecipients();
+    sel.innerHTML='<option value="">— नाम चुनें —</option>'+all.map((x,i)=>`<option value="${i}">${esc(x.name||"नाम उपलब्ध नहीं")} — ${esc(x.category)}${x.mobile?" — "+esc(x.mobile):" — मोबाइल नहीं"}</option>`).join("");
+    sel._recipients=all;
   };
-  if($('alertRecipient')) $('alertRecipient').addEventListener('change',function(){
-    const list=this._recipients||[]; const x=list[+this.value]; if(!x)return;
-    $('alertName').value=x.name||''; $('alertMobile').value=x.mobile||'';
-    if($('alertType') && x.category && ['ANC','HRP','NCD','Delivery/HBNC','TB','Referral','Elderly','Palliative'].includes(x.category)) $('alertType').value=x.category==='Delivery/HBNC'?'Delivery':x.category;
-  });
+  window.addAlertRecipient=function(){
+    const name=gv("alertNewName"), mobile=gv("alertNewMobile").replace(/\D/g,"");
+    if(!name||mobile.length<10){alert("नाम और सही मोबाइल नंबर भरें।");return;}
+    S.alertRecipients.push({id:Date.now(),name,mobile,category:"Saved Recipient"});
+    persist(); $("alertNewName").value=""; $("alertNewMobile").value=""; renderRecipients();
+  };
+  if($("alertRecipient"))$("alertRecipient").onchange=function(){
+    const x=(this._recipients||[])[+this.value]; if(!x)return;
+    if($("alertName"))$("alertName").value=x.name||"";
+    if($("alertMobile"))$("alertMobile").value=x.mobile||"";
+    const map={"Delivery/HBNC":"Delivery"};
+    if($("alertType"))$("alertType").value=map[x.category]||(["ANC","HRP","NCD","Delivery","TB","Referral","Elderly","Palliative"].includes(x.category)?x.category:$("alertType").value);
+  };
+
   const hindi={
-    ANC:'ANC जांच/फॉलो-अप की सूचना', HRP:'उच्च जोखिम गर्भावस्था (HRP) फॉलो-अप की सूचना', NCD:'NCD फॉलो-अप/जांच की सूचना',
-    Delivery:'प्रसव से संबंधित फॉलो-अप की सूचना', Medicine:'दवा स्टॉक/दवा संबंधी सूचना', Diagnostic:'जांच/डायग्नोस्टिक संबंधी सूचना',
-    Referral:'रेफरल के बाद फॉलो-अप की सूचना', TB:'टीबी जांच/उपचार फॉलो-अप की सूचना', HBNC:'HBNC विजिट की सूचना', RI:'टीकाकरण सत्र/टीकाकरण की सूचना',
-    JAS:'JAS संबंधी सूचना', 'Family Planning':'परिवार नियोजन संबंधी सूचना', Other:'स्वास्थ्य सेवा संबंधी सूचना'
+    ANC:"ANC जांच एवं गर्भावस्था फॉलो-अप",HRP:"उच्च जोखिम गर्भावस्था (HRP) फॉलो-अप",
+    NCD:"गैर-संचारी रोग (NCD) फॉलो-अप",Delivery:"प्रसव संबंधी फॉलो-अप",Medicine:"दवा/स्टॉक संबंधी सूचना",
+    Diagnostic:"जांच/डायग्नोस्टिक संबंधी सूचना",Referral:"रेफरल के बाद फॉलो-अप",TB:"टीबी जांच/उपचार फॉलो-अप",
+    HBNC:"HBNC नवजात/शिशु फॉलो-अप",RI:"टीकाकरण संबंधी सूचना",JAS:"जन आरोग्य समिति संबंधी सूचना",
+    "Family Planning":"परिवार नियोजन संबंधी सूचना",Other:"स्वास्थ्य संबंधी सूचना"
   };
   window.makeAlertMessage=function(){
-    const type=gv('alertType'), name=gv('alertName'), village=gv('alertVillage'), date=gv('alertDate'), time=gv('alertTime'), details=gv('alertDetails');
-    const lines=['🔔 स्वास्थ्य सूचना — आयुष्मान आरोग्य मंदिर धरमपुर','विषय: '+(hindi[type]||type)];
-    if(name)lines.push('नाम: '+name); if(village)lines.push('गाँव/केंद्र: '+village); if(date)lines.push('तारीख: '+date); if(time)lines.push('समय: '+time); if(details)lines.push('विवरण: '+details);
-    lines.push('कृपया आवश्यक जांच/फॉलो-अप समय पर करें।','केंद्र — धरमपुर, प्रखंड — लिट्टीपाड़ा (पाकुड़)');
-    $('alertMessage').value=lines.join('\n');
+    const type=gv("alertType"),name=gv("alertName"),village=gv("alertVillage"),date=gv("alertDate"),time=gv("alertTime"),details=gv("alertDetails");
+    const lines=["🔔 स्वास्थ्य सूचना — आयुष्मान आरोग्य मंदिर, धरमपुर","विषय: "+(hindi[type]||type)];
+    if(name)lines.push("मरीज/व्यक्ति का नाम: "+name);
+    if(village)lines.push("गाँव/केंद्र: "+village);
+    if(date)lines.push("फॉलो-अप/कार्य की तारीख: "+date);
+    if(time)lines.push("समय: "+time);
+    if(details)lines.push("विस्तृत सूचना: "+details);
+    lines.push("कृपया समय पर आवश्यक जांच, उपचार या फॉलो-अप करें।","केंद्र — धरमपुर, प्रखंड — लिट्टीपाड़ा (पाकुड़)");
+    if($("alertMessage"))$("alertMessage").value=lines.join("\n");
   };
-  function recipientMobile(){return gv('alertMobile').replace(/\D/g,'')}
-  window.sendAlertWhatsApp=function(){if(!gv('alertMessage'))window.makeAlertMessage();const msg=gv('alertMessage'),m=recipientMobile();window.open((m?'https://wa.me/'+(m.length===10?'91'+m:m):'https://wa.me/')+'?text='+encodeURIComponent(msg),'_blank')};
-  window.sendAlertSMS=function(){if(!gv('alertMessage'))window.makeAlertMessage();const msg=gv('alertMessage'),m=recipientMobile();window.location.href='sms:'+(m||'')+'?body='+encodeURIComponent(msg)};
-  renderRecipients();
+  window.sendAlertWhatsApp=function(){if(!gv("alertMessage"))makeAlertMessage();const m=gv("alertMobile").replace(/\D/g,""),u=m?("https://wa.me/"+(m.length===10?"91"+m:m))+"?text="+encodeURIComponent(gv("alertMessage")):"https://wa.me/?text="+encodeURIComponent(gv("alertMessage"));window.open(u,"_blank")};
+  window.sendAlertSMS=function(){if(!gv("alertMessage"))makeAlertMessage();window.location.href="sms:"+gv("alertMobile").replace(/\D/g,"")+"?body="+encodeURIComponent(gv("alertMessage"))};
 
-  // --- AI Clinical Assistant: symptom-based knowledge suggestions (review before use) ---
-  const medRules=[
-    {rx:/fever|बुखार/i,label:'बुखार',meds:['Paracetamol'],tests:['Temperature; consider malaria/RDT or other fever testing according to local epidemiology and clinical assessment'],note:'बुखार का कारण पहचानना जरूरी है; persistent/high fever या danger signs में clinical assessment करें.'},
-    {rx:/headache|सिर दर्द/i,label:'सिर दर्द',meds:['Paracetamol'],tests:['BP measurement; further tests based on examination'],note:'अचानक बहुत तेज सिरदर्द या neurological symptoms में urgent assessment.'},
-    {rx:/body pain|myalgia|शरीर दर्द|बदन दर्द/i,label:'शरीर दर्द',meds:['Paracetamol'],tests:['Clinical assessment; further tests according to cause'],note:'तेज/लगातार दर्द में कारण की जांच जरूरी है.'},
-    {rx:/sore throat|throat pain|गले में दर्द|गला दर्द/i,label:'गले में दर्द',meds:['Paracetamol','Warm saline gargle'],tests:['Clinical throat examination; testing if clinically indicated'],note:'सांस लेने में कठिनाई, drooling या severe swelling में urgent assessment.'},
-    {rx:/cold|runny nose|सर्दी|जुकाम|नाक बहना/i,label:'सर्दी/नाक बहना',meds:['Paracetamol if pain/fever','Saline nasal care'],tests:['Usually clinical; test if indicated'],note:'Breathing difficulty or persistent/high fever requires assessment.'},
-    {rx:/cough|खांसी/i,label:'खांसी',meds:['Symptomatic treatment according to age and cause; avoid routine antibiotics without indication'],tests:['If cough ≥2 weeks: TB screening/NAAT as per programme protocol'],note:'सांस फूलना, hemoptysis या severe illness में urgent assessment.'},
-    {rx:/diarr|loose stool|दस्त|पतला पैखाना/i,label:'दस्त',meds:['ORS','Zinc — children only, age-appropriate protocol'],tests:['Hydration assessment; stool testing when indicated'],note:'Severe dehydration, blood in stool or persistent vomiting में urgent assessment.'},
-    {rx:/vomit|vomiting|उल्टी/i,label:'उल्टी',meds:['ORS in small frequent amounts if able to drink'],tests:['Hydration/electrolyte assessment when clinically indicated'],note:'Persistent vomiting or dehydration requires assessment.'},
-    {rx:/acidity|gas|heartburn|जलन|सीने में जलन|पेट में जलन/i,label:'Acidity/heartburn',meds:['Antacid/acid-suppression option according to local formulary and clinician review'],tests:['Further evaluation if recurrent, severe or alarm symptoms'],note:'Chest pain, GI bleeding, weight loss or persistent symptoms need assessment.'},
-    {rx:/itch|itching|खुजली|एलर्जी|allerg/i,label:'खुजली/एलर्जी',meds:['Cetirizine or another suitable antihistamine — clinician review'],tests:['Usually clinical; further testing if trigger/condition unclear'],note:'Face/tongue swelling or breathing difficulty is an emergency.'},
-    {rx:/scab|scabies|खाज|स्केबीज/i,label:'Scabies',meds:['Permethrin 5% topical option — confirm age/pregnancy and local protocol'],tests:['Usually clinical examination'],note:'Treat close contacts/environment according to protocol; confirm diagnosis when uncertain.'},
-    {rx:/burning urine|dysuria|पेशाब.*जलन|urine.*burn/i,label:'पेशाब में जलन',meds:['Symptomatic care after assessment; avoid automatic antibiotics'],tests:['Urine routine/appropriate testing; culture when indicated'],note:'Pregnancy, fever/flank pain or male UTI symptoms need clinician assessment.'},
-    {rx:/abdominal pain|पेट दर्द|पेट में दर्द/i,label:'पेट दर्द',meds:['Avoid automatic analgesic treatment for severe/unclear abdominal pain'],tests:['Clinical abdominal examination; tests guided by findings'],note:'Severe pain, guarding, GI bleeding or pregnancy-related pain needs urgent assessment.'},
-    {rx:/constipation|कब्ज/i,label:'कब्ज',meds:['Fluids/fibre; suitable laxative only after assessment'],tests:['Usually clinical; investigate red flags/recurrent symptoms'],note:'Severe pain, vomiting, blood in stool or obstruction symptoms need assessment.'}
+  // ---------- AI clinical knowledge assistant ----------
+  const rules=[
+    {rx:/fever|बुखार/i,label:"बुखार",meds:["Paracetamol (age/weight appropriate dose)"],tests:["Temperature; malaria/RDT or other fever testing when clinically indicated"],note:"बुखार का कारण पहचानें; danger signs या लगातार बुखार में referral/clinical assessment."},
+    {rx:/headache|सिर दर्द/i,label:"सिर दर्द",meds:["Paracetamol (if appropriate)"],tests:["BP measurement; further tests according to examination"],note:"अचानक बहुत तेज सिरदर्द, कमजोरी/बेहोशी/दृष्टि समस्या में तत्काल assessment."},
+    {rx:/body pain|myalgia|शरीर दर्द|बदन दर्द/i,label:"शरीर दर्द",meds:["Paracetamol (if appropriate)"],tests:["Clinical examination"],note:"लगातार/बहुत तेज दर्द में कारण की जांच करें."},
+    {rx:/cold|runny nose|सर्दी|जुकाम|नाक बहना/i,label:"सर्दी/नाक बहना",meds:["Saline nasal care","Paracetamol only if pain/fever and appropriate"],tests:["Usually clinical; testing if indicated"],note:"सांस लेने में कठिनाई या high/persistent fever में assessment."},
+    {rx:/cough|खांसी/i,label:"खांसी",meds:["Supportive/symptomatic care according to age and cause"],tests:["यदि खांसी ≥2 सप्ताह: TB screening/NAAT as per programme protocol"],note:"खून वाली खांसी, सांस फूलना या severe illness में urgent assessment; routine antibiotic बिना indication नहीं."},
+    {rx:/diarr|loose stool|दस्त|पतला पैखाना/i,label:"दस्त",meds:["ORS","Zinc — children only, age-appropriate protocol"],tests:["Hydration assessment; stool testing when indicated"],note:"Severe dehydration, blood in stool या persistent vomiting में urgent care."},
+    {rx:/vomit|vomiting|उल्टी/i,label:"उल्टी",meds:["ORS छोटे-छोटे घूंट में यदि पी सकते हों"],tests:["Hydration assessment; further tests when indicated"],note:"बार-बार उल्टी/डिहाइड्रेशन में assessment."},
+    {rx:/acidity|heartburn|जलन|सीने में जलन|पेट में जलन/i,label:"अम्लता/जलन",meds:["Antacid/acid-suppression option only after age, pregnancy and contraindication review"],tests:["Further evaluation if recurrent/severe/alarm symptoms"],note:"सीने में दर्द, खून की उल्टी/काला मल, वजन कम होना या लगातार लक्षण में assessment."},
+    {rx:/itch|itching|खुजली|एलर्जी|allerg/i,label:"खुजली/एलर्जी",meds:["Suitable antihistamine option after age/pregnancy review"],tests:["Usually clinical; further testing if unclear"],note:"चेहरा/जीभ सूजना या सांस में कठिनाई emergency है."},
+    {rx:/scab|scabies|खाज|स्केबीज/i,label:"Scabies",meds:["Permethrin 5% topical option — confirm age/pregnancy/local protocol"],tests:["Usually clinical"],note:"घर के close contacts/environment को programme protocol अनुसार manage करें."},
+    {rx:/burning urine|dysuria|पेशाब.*जलन|urine.*burn/i,label:"पेशाब में जलन",meds:["Supportive care; antibiotic only after clinical assessment"],tests:["Urine routine; culture when indicated"],note:"Pregnancy, fever/flank pain या male urinary symptoms में clinician assessment."},
+    {rx:/constipation|कब्ज/i,label:"कब्ज",meds:["Fluids/fibre; suitable laxative only after assessment"],tests:["Usually clinical; investigate red flags"],note:"तेज दर्द, उल्टी, खून या obstruction symptoms में urgent assessment."}
   ];
-  function parseBP2(x){const m=String(x).match(/(\d{2,3})\s*[/\-]\s*(\d{2,3})/);return m?[+m[1],+m[2]]:null}
-  function aiKnowledge(){
-    const q=gv('aiQuery'), age=+gv('aiAge')||0, sex=gv('aiSex'), bp=parseBP2(gv('aiBP')), lmp=gv('aiLMP'), rbs=+gv('aiRBS')||0, fbs=+gv('aiFBS')||0, ppbs=+gv('aiPPBS')||0;
-    const found=medRules.filter(r=>r.rx.test(q)); let cat='Other'; const notes=[], tests=[], meds=[];
-    if(lmp){cat='ANC';tests.push('ANC examination and routine ANC investigations according to gestational age');notes.push('LMP से EDD पहले से calculate होगा; pregnancy में medicines केवल applicable guideline/clinician review के बाद.')}
-    if(bp&&(bp[0]>=140||bp[1]>=90)){cat=lmp?'HRP':'NCD';tests.push('Repeat BP correctly; assess for hypertension and target-organ symptoms');notes.push('Elevated BP को repeat/confirm करें; pregnancy में HRP/hypertensive disorder assessment आवश्यक है.')}
-    if(fbs>=126||ppbs>=200||rbs>=200){cat='NCD';tests.push('Confirm diabetes status with appropriate glucose testing/HbA1c where applicable');notes.push('Single abnormal glucose value से treatment शुरू न करें; clinical confirmation आवश्यक है.')}
-    if(/cough/i.test(q)&&/(2 week|2 weeks|14 day|persistent)/i.test(q)){cat='TB';tests.push('TB screening/NAAT or other programme-recommended diagnostic');notes.push('2 सप्ताह या अधिक खांसी में TB screening जरूरी है.')}
-    found.forEach(r=>{r.meds.forEach(m=>{
-      const master=(S.med||[]).filter(x=>x&&x.name).find(x=>new RegExp(m.split(/\s|\(|\/|—/)[0].replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(String(x.name)));
-      meds.push(master ? `${master.name}${master.batch?' — Batch '+master.batch:''} (stock balance: ${medicineBalance((S.med||[]).indexOf(master))})` : m);
-    });r.tests.forEach(t=>tests.push(t));notes.push(r.note)});
-    if(!found.length&&!bp&&!rbs&&!fbs&&!ppbs&&!lmp)notes.push('दिए गए symptoms/values से specific medicine चुनना सुरक्षित नहीं है; examination और diagnosis के बाद treatment तय करें.');
-    const uniq=a=>[...new Set(a)];
-    return {q,age,sex,bp,lmp,cat,meds:uniq(meds),tests:uniq(tests),notes:uniq(notes)};
+  function bp(v){const m=String(v).match(/(\d{2,3})\s*[/\-]\s*(\d{2,3})/);return m?[+m[1],+m[2]]:null}
+  function matchStock(s){
+    const needle=String(s).split("(")[0].split("—")[0].trim().toLowerCase();
+    return (S.med||[]).find(m=>String(m.name||"").toLowerCase().includes(needle.split(" ")[0]));
+  }
+  function aiData(){
+    const q=gv("aiQuery"),b=bp(gv("aiBP")),lmp=gv("aiLMP"),rbs=+gv("aiRBS")||0,fbs=+gv("aiFBS")||0,ppbs=+gv("aiPPBS")||0;
+    let cat="Other",meds=[],tests=[],notes=[];
+    if(lmp){cat="ANC";tests.push("ANC जांच एवं गर्भावस्था की अवधि के अनुसार आवश्यक ANC जांच");notes.push("LMP से EDD निकाला जाएगा; गर्भावस्था में दवा देने से पहले pregnancy-safe विकल्प/contraindication की समीक्षा करें.");}
+    if(b&&(b[0]>=140||b[1]>=90)){cat=lmp?"HRP":"NCD";tests.push("BP सही तकनीक से दोबारा मापें और hypertensive disorder assessment करें");notes.push(lmp?"गर्भावस्था में बढ़ा BP HRP/गर्भावस्था संबंधी hypertension का संकेत हो सकता है; protocol अनुसार assessment/referral करें.":"बढ़े BP को repeat/confirm करके NCD protocol अनुसार assessment करें.");}
+    if(fbs>=126||ppbs>=200||rbs>=200){cat="NCD";tests.push("उपयुक्त glucose confirmation/HbA1c जहाँ लागू हो");notes.push("एक abnormal glucose value के आधार पर final diagnosis/prescription न करें; clinical confirmation जरूरी है.");}
+    if(/cough|खांसी/i.test(q)&&/(2 week|2 weeks|14 day|दो सप्ताह|लंबी|persistent)/i.test(q)){cat="TB";tests.push("TB screening/NAAT या programme-recommended diagnostic");notes.push("दो सप्ताह या अधिक खांसी में TB screening करें.");}
+    rules.filter(r=>r.rx.test(q)).forEach(r=>{
+      r.meds.forEach(x=>{const st=matchStock(x);meds.push(st?`${st.name} — उपलब्ध stock: ${st.qty??0} ${st.unit||""}`:x)});
+      tests.push(...r.tests);notes.push(r.note);
+    });
+    if(!rules.some(r=>r.rx.test(q))&&!b&&!rbs&&!fbs&&!ppbs&&!lmp)notes.push("दिए गए विवरण से specific medicine तय नहीं की जा सकती; examination और diagnosis के बाद treatment चुनें.");
+    return {cat,meds:[...new Set(meds)],tests:[...new Set(tests)],notes:[...new Set(notes)],q,lmp};
   }
   window.aiAnalyze=function(){
-    const a=aiKnowledge(); window.__aiKnowledge=a;
-    const medHtml=a.meds.length?a.meds.map((m,i)=>`<li><label><input type="checkbox" class="aiMedPick" data-i="${i}" checked> ${esc(m)}</label></li>`).join(''):'<li>Specific medicine suggestion नहीं — diagnosis/clinical assessment पहले.</li>';
-    const testHtml=a.tests.length?a.tests.map(t=>`<li>${esc(t)}</li>`).join(''):'<li>Clinically indicated tests चुनें.</li>';
-    const noteHtml=a.notes.map(n=>`<li>${esc(n)}</li>`).join('');
-    const edd= a.lmp ? (()=>{const d=new Date(a.lmp+'T00:00:00');d.setDate(d.getDate()+280);return d.toISOString().slice(0,10)})() : '';
-    $('aiResult').innerHTML=`<div class="card"><b>Suggested category:</b> ${esc(a.cat)} ${edd?`<br><b>EDD:</b> ${esc(edd)}`:''}</div><div class="card"><h3>💊 Possible medicine options — Knowledge / Review only</h3><ul>${medHtml}</ul><p class="muted">ये automatic prescription नहीं हैं। उम्र, pregnancy, allergy, comorbidity, diagnosis और current treatment देखकर clinician final medicine तय करे.</p></div><div class="card"><h3>🧪 Suggested tests</h3><ul>${testHtml}</ul></div><div class="card"><h3>⚠️ Clinical notes</h3><ul>${noteHtml}</ul></div>`;
+    const a=aiData();window.__aiData=a;
+    const edd=a.lmp?(()=>{const d=new Date(a.lmp+"T00:00:00");d.setDate(d.getDate()+280);return d.toISOString().slice(0,10)})():"";
+    $("aiResult").innerHTML=`<div class="ai-followup-card"><b>संभावित श्रेणी:</b> ${esc(a.cat)} ${edd?"<br><b>EDD:</b> "+esc(edd):""}</div>
+    <div class="ai-followup-card"><h3>💊 दवा के संभावित विकल्प — केवल जानकारी/समीक्षा हेतु</h3><ul>${a.meds.length?a.meds.map((m,i)=>`<li><label><input type="checkbox" class="aiMedPick" data-i="${i}" checked> ${esc(m)}</label></li>`).join(""):"<li>कोई specific medicine suggestion नहीं मिली। पहले clinical assessment करें.</li>"}</ul><small>अंतिम दवा, dose और duration patient की उम्र/वजन, pregnancy, allergy, comorbidity और examination देखकर clinician confirm करें.</small></div>
+    <div class="ai-followup-card"><h3>🧪 आवश्यक/विचारणीय जांच</h3><ul>${a.tests.map(x=>"<li>"+esc(x)+"</li>").join("")||"<li>Clinical findings के अनुसार जांच चुनें.</li>"}</ul></div>
+    <div class="ai-followup-card"><h3>📅 फॉलो-अप में क्या करना है</h3><ul>${a.notes.map(x=>"<li>"+esc(x)+"</li>").join("")}</ul></div>`;
   };
   window.aiAddSelected=function(){
-    const a=window.__aiKnowledge||aiKnowledge(), name=gv('aiName'); if(!name){alert('Patient Name भरें।');return}
-    const meds=[...document.querySelectorAll('.aiMedPick:checked')].map(x=>a.meds[+x.dataset.i]).filter(Boolean);
-    let cat=a.cat; const rec={date:today0,name,guardian:gv('aiGuardian'),age:gv('aiAge'),sex:gv('aiSex'),mobile:gv('aiMobile'),abhaid:gv('aiAbha'),aadhaar:gv('aiAadhaar'),village:gv('aiVillage'),tola:'',condition:cat,diagnosis:cat,bp:gv('aiBP'),rbs:gv('aiRBS')||gv('aiFBS')||gv('aiPPBS'),medicine:meds.join('; '),remark:'AI Clinical Assistant - confirmed after review'};
-    if(!Array.isArray(S.patients))S.patients=[]; S.patients.push(rec); save(); render(); alert('Patient category और reviewed suggestions के साथ record add हो गया।');
+    const a=window.__aiData||aiData(),name=gv("aiName");if(!name){alert("Patient Name भरें।");return}
+    const meds=[...document.querySelectorAll(".aiMedPick:checked")].map(x=>a.meds[+x.dataset.i]).filter(Boolean);
+    S.patients=S.patients||[];S.patients.push({id:Date.now(),date:today0,name,guardian:gv("aiGuardian"),age:+gv("aiAge")||0,sex:gv("aiSex"),mobile:gv("aiMobile"),abhaid:gv("aiAbha"),aadhaar:gv("aiAadhaar"),village:gv("aiVillage"),condition:a.cat,diagnosis:a.cat,bp:gv("aiBP"),rbs:gv("aiRBS")||gv("aiFBS")||gv("aiPPBS"),medicine:meds.join("; "),remark:"AI सुझाव clinician द्वारा review/confirm किया गया"});
+    persist();alert("मरीज को Patient Register में जोड़ दिया गया।");
   };
-  window.aiPrescription=function(){
-    const a=window.__aiKnowledge||aiKnowledge(), meds=[...document.querySelectorAll('.aiMedPick:checked')].map(x=>a.meds[+x.dataset.i]).filter(Boolean);
-    const w=window.open('','_blank');if(!w){alert('Pop-up blocked.');return} const lines=meds.length?meds.map(m=>`<li>${esc(m)}</li>`).join(''):'<li>कोई medicine auto-selected नहीं।</li>'; const tests=a.tests.map(t=>`<li>${esc(t)}</li>`).join('');
-    w.document.write(`<html><head><title>Prescription</title><style>body{font-family:Arial;padding:30px;color:#111}table{width:100%;border-collapse:collapse}td,th{border:1px solid #999;padding:8px}</style></head><body><h2 style="text-align:center">PRESCRIPTION</h2><div style="text-align:center">Ayushman Arogya Mandir Dharampur, Littipara, Pakur</div><hr><p><b>Patient:</b> ${esc(gv('aiName'))} &nbsp; <b>Age:</b> ${esc(gv('aiAge'))} &nbsp; <b>Gender:</b> ${esc(gv('aiSex'))}</p><p><b>Father/Spouse:</b> ${esc(gv('aiGuardian'))} &nbsp; <b>Mobile:</b> ${esc(gv('aiMobile'))}</p><p><b>Village:</b> ${esc(gv('aiVillage'))}</p><p><b>Symptoms:</b> ${esc(a.q)}</p><p><b>Recorded values:</b> BP ${esc(gv('aiBP'))}, RBS ${esc(gv('aiRBS'))}, FBS ${esc(gv('aiFBS'))}, PPBS ${esc(gv('aiPPBS'))}</p><h3>Possible medicine options (clinician to confirm)</h3><ul>${lines}</ul><h3>Suggested tests</h3><ul>${tests||'<li>As clinically indicated</li>'}</ul><p><b>Note:</b> This document is a clinical decision-support draft. Final diagnosis, medicine, dose, duration and contraindication check must be completed by the clinician.</p><div style="margin-top:70px;text-align:right"><b>Community Health Officer</b><br>Rahul Sharma<br>AAM Dharampur</div><button onclick="window.print()">Print / Save PDF</button></body></html>`);w.document.close();
-  };
-  if($('aiQuery'))$('aiQuery').addEventListener('input',()=>{});
-})();
 
-<script>
-(function(){
-  function monthKey(){const el=document.getElementById('mcMonth');return (el&&el.value)||new Date().toISOString().slice(0,7)}
-  function medLandscape(){
-    const key=monthKey(), days=new Date(+key.slice(0,4),+key.slice(5,7),0).getDate();
-    const uses=Array.isArray(S.meduse)?S.meduse:[], rec=Array.isArray(S.medReceipts)?S.medReceipts:[], masters=Array.isArray(S.med)?S.med:[];
-    const names=[...new Set([...masters.map(x=>x.name).filter(Boolean),...uses.filter(x=>String(x.date||'').startsWith(key)).map(x=>x.name).filter(Boolean)])];
+  // ---------- Hindi follow-up detail cards ----------
+  function followupDetail(x,type){
+    const name=x.name||x.patient||x.mother||"मरीज",v=x.village||x.pvillage||x.tola||"—";
+    if(type==="NCD")return `मरीज <b>${esc(name)}</b> का NCD फॉलो-अप है। गाँव: <b>${esc(v)}</b>। BP/RBS की जांच करें, पिछली दवा नियमित लेने की पुष्टि करें, दवा की उपलब्धता/side effects पूछें और BP/शुगर नियंत्रण के अनुसार आगे की सलाह दें। असामान्य या गंभीर लक्षण होने पर चिकित्सकीय परामर्श/रेफरल करें।`;
+    if(type==="ANC"||type==="HRP")return `मरीज <b>${esc(name)}</b> गर्भवती महिला हैं। गाँव: <b>${esc(v)}</b>। LMP/गर्भावस्था की अवधि की पुष्टि करें, BP, वजन, Hb तथा निर्धारित ANC जांच देखें। HRP जोखिम/चेतावनी संकेत पूछें। रक्तस्राव, तेज सिरदर्द, धुंधला दिखना, सूजन, पेट में तेज दर्द, भ्रूण की हलचल में कमी आदि होने पर तुरंत रेफरल करें।`;
+    if(type==="TB")return `मरीज <b>${esc(name)}</b> का TB संबंधी फॉलो-अप है। गाँव: <b>${esc(v)}</b>। उपचार/जांच की स्थिति देखें, दवा नियमित लेने की पुष्टि करें, adverse effects और खांसी/बुखार/वजन की स्थिति पूछें तथा programme protocol अनुसार अगली जांच/फॉलो-अप करें।`;
+    if(type==="Referral")return `मरीज <b>${esc(name)}</b> को पहले रेफर किया गया है। गाँव: <b>${esc(v)}</b>। रेफरल केंद्र पर मरीज गया या नहीं, वहां क्या जांच/उपचार हुआ, discharge/advice क्या मिला और आगे का follow-up क्या है—इन सबकी पुष्टि करें और outcome दर्ज करें।`;
+    if(type==="Delivery"||type==="HBNC")return `मरीज/नवजात <b>${esc(name)}</b> का प्रसव/HBNC फॉलो-अप है। गाँव: <b>${esc(v)}</b>। माँ और बच्चे की स्थिति देखें, feeding, तापमान/खतरे के संकेत और निर्धारित postnatal/newborn care की जांच करें। danger signs होने पर तत्काल referral करें।`;
+    return `<b>${esc(name)}</b> का फॉलो-अप है। गाँव: <b>${esc(v)}</b>। पिछली जांच/उपचार की स्थिति देखें, वर्तमान शिकायत पूछें, आवश्यक जांच करें और अगली फॉलो-अप तारीख दर्ज करें।`;
+  }
+  window.getHindiFollowup=followupDetail;
+
+  // ---------- Medicine & Diagnostic consumption: register-style landscape ----------
+  function monthFor(id){return ($(id)?.value)||new Date().toISOString().slice(0,7)}
+  function medRows(month){
+    const days=new Date(+month.slice(0,4),+month.slice(5,7),0).getDate(), names=[...new Set((S.med||[]).map(x=>x.name).filter(Boolean).concat((S.meduse||[]).filter(x=>String(x.date||"").startsWith(month)).map(x=>x.name).filter(Boolean)))];
+    return {days,names};
+  }
+  function medCell(name,date){return (S.meduse||[]).filter(x=>x.date===date&&String(x.name||"").toLowerCase()===String(name).toLowerCase()).reduce((s,x)=>s+(+x.qty||0),0)}
+  function kitCell(name,date){return (S.kituse||[]).filter(x=>x.date===date&&String(x.name||x.test||"").toLowerCase()===String(name).toLowerCase()).reduce((s,x)=>s+(+x.qty||+x.used||0),0)}
+  function buildRegister(type){
+    const month=monthFor(type==="mc"?"mcMonth":"dcMonth"),days=new Date(+month.slice(0,4),+month.slice(5,7),0).getDate();
+    const source=type==="mc"?(S.med||[]):(S.kits||[]), use=type==="mc"?(S.meduse||[]):(S.kituse||[]);
+    const getName=x=>x.name||x.test||"";
+    const names=[...new Set(source.map(getName).filter(Boolean).concat(use.filter(x=>String(x.date||"").startsWith(month)).map(getName).filter(Boolean)))];
     const rows=names.map(name=>{
-      const master=masters.find(m=>m.name===name)||{}; let total=0, receipt=0;
-      const cells=[]; for(let d=1;d<=days;d++){const date=`${key}-${String(d).padStart(2,'0')}`; const u=uses.filter(x=>x.date===date&&x.name===name).reduce((s,x)=>s+(+x.qty||0),0); total+=u; cells.push(u||''); receipt+=rec.filter(x=>x.date===date&&x.name===name).reduce((s,x)=>s+(+x.qty||0),0)}
-      const opening=+(master.qty||0); const closing=opening+receipt-total;
-      return `<tr><td>${esc(name)}</td><td>${esc(master.unit||'')}</td><td>${opening}</td>${cells.map(x=>`<td>${x}</td>`).join('')}<td>${receipt}</td><td>${total}</td><td>${closing}</td></tr>`;
-    }).join('');
-    const heads=['Medicine','Unit','Opening']; for(let d=1;d<=days;d++)heads.push(String(d)); heads.push('Received','Total Consumption','Closing');
-    return {key,days,heads,rows,title:'Daily Drug Consumption Record'};
+      const master=source.find(x=>getName(x)===name)||{};
+      const cells=[];let total=0,received=0;
+      for(let d=1;d<=days;d++){const date=`${month}-${String(d).padStart(2,"0")}`;const q=type==="mc"?medCell(name,date):kitCell(name,date);cells.push(q||"");total+=q;
+        received+=(use||[]).filter(x=>x.date===date&&getName(x)===name).reduce((s,x)=>s+(+x.received||0),0);
+      }
+      const opening=+(master.opening??master.qty??0),closing=opening+received-total;
+      return `<tr><td>${esc(name)}</td><td>${esc(master.unit||"")}</td><td>${opening}</td>${cells.map(x=>`<td>${x}</td>`).join("")}<td>${received}</td><td>${total}</td><td>${closing}</td></tr>`;
+    });
+    const heads=[type==="mc"?"Medicine Name":"Diagnostic / Test Name","Unit","Opening"];for(let d=1;d<=days;d++)heads.push(String(d));heads.push("Received","Total Consumption","Closing");
+    return {month,heads,rows};
   }
-  function diagLandscape(){
-    const key=((document.getElementById('dcMonth')||{}).value)||new Date().toISOString().slice(0,7), days=new Date(+key.slice(0,4),+key.slice(5,7),0).getDate();
-    const a=Array.isArray(S.diagnosticConsumption)?S.diagnosticConsumption:[], names=[...new Set(a.filter(x=>String(x.date||'').startsWith(key)).map(x=>x.test).filter(Boolean))];
-    const rows=names.map(name=>{let total=0,received=0,opening=0,cells=[]; const first=a.find(x=>x.test===name&&String(x.date||'').startsWith(key)); opening=+(first?.opening||0); for(let d=1;d<=days;d++){const date=`${key}-${String(d).padStart(2,'0')}`;const day=a.filter(x=>x.date===date&&x.test===name);const u=day.reduce((s,x)=>s+(+x.used||0),0);total+=u;received+=day.reduce((s,x)=>s+(+x.received||0),0);cells.push(u||'')} const closing=opening+received-total; return `<tr><td>${esc(name)}</td><td>${esc(first?.unit||'Kit')}</td><td>${opening}</td>${cells.map(x=>`<td>${x}</td>`).join('')}<td>${received}</td><td>${total}</td><td>${closing}</td></tr>`}).join('');
-    const heads=['Diagnostic/Test','Unit','Opening'];for(let d=1;d<=days;d++)heads.push(String(d));heads.push('Received','Total Consumption','Closing');return {key,days,heads,rows,title:'Daily Diagnostic Test Consumption Record'};
+  function renderLandscape(type){
+    const p=buildRegister(type),target=$(type==="mc"?"mcReport":"dcReport");if(!target)return;
+    target.innerHTML=`<div class="landscape-preview"><table class="reg-landscape"><thead><tr>${p.heads.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${p.rows.join("")||`<tr><td colspan="${p.heads.length}">इस महीने अभी कोई entry नहीं है।</td></tr>`}</tbody></table></div>`;
   }
-  window.printNewSectionReport=function(type){
-    if(type==='mc'||type==='dc'){
-      const p=type==='mc'?medLandscape():diagLandscape(); const w=window.open('','_blank'); if(!w){alert('Pop-up blocked.');return;}
-      w.document.write(`<html><head><title>${p.title}</title><style>@page{size:A4 landscape;margin:8mm}body{font-family:Arial,sans-serif;color:#111}h2{text-align:center;margin:0 0 4px}p{text-align:center;margin:2px}.reg{border-collapse:collapse;width:100%;font-size:7px;table-layout:auto}.reg th,.reg td{border:1px solid #333;padding:3px;text-align:center;white-space:nowrap}.reg th:first-child,.reg td:first-child{text-align:left;min-width:95px}.sign{margin-top:18px;text-align:right}</style></head><body><h2>${p.title}</h2><p>Ayushman Arogya Mandir Dharampur, Littipara, Pakur</p><p>Month: ${p.key}</p><table class="reg"><thead><tr>${p.heads.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${p.rows||'<tr><td colspan="99">No entries</td></tr>'}</tbody></table><div class="sign"><b>Community Health Officer</b><br>Rahul Sharma<br>AAM Dharampur</div><button onclick="window.print()">Print / Save PDF</button></body></html>`);w.document.close();return;
-    }
-    const ids={ep:['epTable','Elderly & Palliative Register'],ln:['lnTable','Linen Register'],sm:['smTable','Staff Movement Register'],in:['inTable','Indent Register'],bw:['bwTable','BMW Register'],st:['stTable','Sterilisation Register'],q:['qTable','PDCA / CAPA Register'],kpi:['kpiAutoTable','KPI Dashboard']}; const cfg=ids[type]; if(!cfg){return;} const table=document.getElementById(cfg[0]); const w=window.open('','_blank');if(!w){alert('Pop-up blocked.');return;}w.document.write(`<html><head><title>${cfg[1]}</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial}table{width:100%;border-collapse:collapse;font-size:9px}th,td{border:1px solid #555;padding:4px}h2{text-align:center}.sign{text-align:right;margin-top:30px}</style></head><body><h2>${cfg[1]}</h2><p style="text-align:center">Ayushman Arogya Mandir Dharampur, Littipara, Pakur</p>${table?table.outerHTML:'<p>No data</p>'}<div class="sign"><b>Community Health Officer</b><br>Rahul Sharma<br>AAM Dharampur</div><button onclick="window.print()">Print / Save PDF</button></body></html>`);w.document.close();
+  window.addMedCons=function(){
+    const name=gv("mcMed");if(!name){alert("Medicine चुनें।");return}
+    S.meduse=S.meduse||[];const date=gv("mcDate")||today0();const used=+gv("mcUsed")||0,received=+gv("mcReceived")||0;
+    const master=(S.med||[]).find(x=>String(x.name)===String(name));
+    S.meduse.push({id:Date.now(),date,name,batch:gv("mcBatch")||master?.batch||"",qty:used,received,unit:gv("mcUnit")||master?.unit||"Unit",source:"manual"});
+    if(master&&used){master.qty=Math.max(0,(+master.qty||0)-used);if(received)master.qty=(+master.qty||0)+received}
+    persist();renderLandscape("mc");alert("Medicine consumption saved.");
   };
+  window.addDiagCons=function(){
+    const name=gv("dcTest");if(!name){alert("Diagnostic/Test चुनें।");return}
+    S.kituse=S.kituse||[];const date=gv("dcDate")||today0(),used=+gv("dcUsed")||0,received=+gv("dcReceived")||0;
+    const master=(S.kits||[]).find(x=>String(x.name)===String(name));
+    S.kituse.push({id:Date.now(),date,name,test:name,qty:used,used,received,unit:gv("dcUnit")||master?.unit||"Kit",source:"manual"});
+    if(master&&used){master.qty=Math.max(0,(+master.qty||0)-used);if(received)master.qty=(+master.qty||0)+received}
+    persist();renderLandscape("dc");alert("Diagnostic consumption saved.");
+  };
+  window.addDiagnosticMasterFromConsumption=function(){
+    const name=prompt("Diagnostic/Test का नाम लिखें:");if(!name)return;
+    S.kits=S.kits||[];if(!S.kits.some(x=>String(x.name).toLowerCase()===name.toLowerCase()))S.kits.push({id:Date.now(),name,qty:0,unit:"Kit"});persist();fillNewMasters();alert("Diagnostic/Test जोड़ दिया गया।");
+  };
+  function fillNewMasters(){
+    if($("mcMed"))$("mcMed").innerHTML='<option value="">— Medicine चुनें —</option>'+(S.med||[]).map(x=>`<option>${esc(x.name)}</option>`).join("");
+    if($("dcTest"))$("dcTest").innerHTML='<option value="">— Diagnostic/Test चुनें —</option>'+(S.kits||[]).map(x=>`<option>${esc(x.name)}</option>`).join("");
+    renderLandscape("mc");renderLandscape("dc");
+  }
+  if($("mcMed"))$("mcMed").onchange=function(){const m=(S.med||[]).find(x=>x.name===this.value);if(m){$("mcBatch").value=m.batch||"";$("mcUnit").value=m.unit||"Unit";$("mcOpening").value=m.qty??0}};
+  if($("dcTest"))$("dcTest").onchange=function(){const m=(S.kits||[]).find(x=>x.name===this.value);if(m){$("dcUnit").value=m.unit||"Kit";$("dcOpening").value=m.qty??0}};
+  ["mcMonth","dcMonth"].forEach(id=>$(id)?.addEventListener("change",()=>renderLandscape(id==="mcMonth"?"mc":"dc")));
+  fillNewMasters();
+
+  // Detailed Hindi follow-up rendering for alert/dashboard tables.
+  function refreshFollowupCards(){
+    document.querySelectorAll("[data-followup-type]").forEach(el=>{
+      try{const x=JSON.parse(el.dataset.followup||"{}");el.innerHTML=getHindiFollowup(x,el.dataset.followupType||"Other")}catch(e){}
+    });
+  }
+  // Re-render recipient list whenever navigation/render occurs.
+  const oldRender=window.render; if(typeof oldRender==="function"){
+    window.render=function(){oldRender.apply(this,arguments);setTimeout(()=>{renderRecipients();refreshFollowupCards()},0)}
+  }else{renderRecipients()}
+  renderRecipients();
 })();
-</script>
 </script>
 </body></html>
-
