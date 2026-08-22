@@ -25,7 +25,7 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
 .pill{display:inline-block;background:#ecfdf3;color:#047857;border-radius:99px;padding:4px 8px;margin:2px;font-size:11px}
 @media(max-width:700px){.entryrow{grid-template-columns:1fr 95px 38px}}
 .notice{padding:11px;border-radius:11px;background:#eff6ff;border:1px solid #dbeafe;color:#1e40af;font-size:12px}.danger{color:#b91c1c}.success{color:#047857}
-.report-tools{margin-top:10px}.report-tools button{margin-top:8px}.searchbar{display:flex;gap:8px;flex-wrap:wrap}.searchbar input{max-width:260px}.empty{padding:25px;text-align:center;color:var(--muted)}
+.centre-name{font-size:13px;font-weight:800;color:#0f766e;margin-top:3px}.print-footer{margin-top:28px;padding-top:8px;border-top:1px solid #bbb;text-align:center;font-size:10px;color:#333}.report-tools{margin-top:10px}.report-tools button{margin-top:8px}.searchbar{display:flex;gap:8px;flex-wrap:wrap}.searchbar input{max-width:260px}.empty{padding:25px;text-align:center;color:var(--muted)}
 @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.quick{grid-template-columns:repeat(3,1fr)}form{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:540px){header{position:relative}main{padding:11px}.grid{gap:7px}.quick{grid-template-columns:repeat(2,1fr)}form{grid-template-columns:1fr}.full{grid-column:auto}.title{font-size:18px}}
 #printArea{display:block;position:absolute;left:-100000px;top:0;width:100%;background:#fff;color:#111}
@@ -37,6 +37,7 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
   #printArea h1{font-size:20px;margin:0 0 4px}
   #printArea h2{font-size:15px;margin:18px 0 7px;border-bottom:1px solid #ddd;padding-bottom:4px}
   #printArea .printmeta{font-size:11px;color:#555;margin-bottom:10px}
+  #printArea .print-footer{margin-top:28px;padding-top:8px;border-top:1px solid #aaa;text-align:center;font-size:10px;color:#333}
   #printArea .printgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
   #printArea .printcard{border:1px solid #ccc;border-radius:6px;padding:7px}
   #printArea .printcard .label{font-size:9px;color:#666}
@@ -103,7 +104,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 </head>
 <body>
 <header>
- <div class="head"><div><div class="title">🏥 HSC Tracker</div><div class="sub">Daily • Monthly • Patient • ANC • Stock • Activities • Reports</div></div><div id="clock"></div></div>
+ <div class="head"><div><div class="title">🏥 HSC Tracker</div><div class="centre-name">Ayushman Arogya Mandir Dharampur, Littipara, Pakur, Jharkhand</div><div class="sub">Daily • Monthly • Patient • ANC • Stock • Activities • Reports</div></div><div id="clock"></div></div>
  <nav id="nav">
   <button class="active" data-v="dashboard">Dashboard</button><button data-v="sectionDashboard">📊 Section Dashboard</button><button data-v="daily">Daily</button><button data-v="patient">OPD/Patient</button><button data-v="anc">ANC/HRP</button><button data-v="ncd">❤️ NCD</button><button data-v="referral">🔴 Referral</button><button data-v="tb">🫁 TB</button><button data-v="medicine">Medicine</button><button data-v="fpsupply">🟣 FP & Sahiya Supply</button><button data-v="diagnostic">Diagnostic</button><button data-v="activity">Activities</button><button data-v="jas">💰 JAS</button><button data-v="report">Reports</button><button data-v="alerts">🔔 Alerts</button><button data-v="village">🏘️ Village/Tola</button><button data-v="ri">💉 RI Schedule</button><button data-v="delivery">👶 Delivery/HBNC</button><button data-v="bulk">📥 Bulk Import</button><button data-v="elderly">👴 Elderly/Palliative</button><button data-v="medcons">💊 Medicine Consumption</button><button data-v="diagcons">🧪 Diagnostic Consumption</button><button data-v="linen">🧺 Linen</button><button data-v="movement">👥 Staff Movement</button><button data-v="indent">📋 Indent</button><button data-v="bmw">♻️ BMW</button><button data-v="sterilisation">🧼 Sterilisation</button><button data-v="quality">🔄 PDCA/CAPA</button><button data-v="kpiAuto">📊 KPI Dashboard</button><button data-v="backup">Backup/Settings</button><button data-v="inventory">🏥 Inventory Register</button>
 </nav>
@@ -111,7 +112,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 <main>
 
 <section id="dashboard" class="view active">
- <div class="section"><h2>📊 Dashboard — कुल संचयी रिपोर्ट</h2><span class="muted" id="dashDate"></span></div>
+ <div class="section"><div><h2>📊 Dashboard — कुल संचयी रिपोर्ट</h2><div class="muted">Ayushman Arogya Mandir Dharampur, Littipara, Pakur, Jharkhand</div></div><span class="muted" id="dashDate"></span></div>
  <div class="grid" id="kpis"></div>
  <div class="section"><h2>📅 आज की रिपोर्ट</h2><span class="muted">आज के saved data का snapshot</span></div>
  <div class="grid" id="todayKpis"></div>
@@ -642,7 +643,7 @@ window.clearInventory=function(){["invEditId","invQty","invUnit","invSerial","in
 window.editInventory=function(id){const r=data().find(x=>x.id===id);if(!r)return;$("invEditId").value=r.id;const m={invItemName:"name",invCategory:"category",invQty:"qty",invUnit:"unit",invSerial:"serial",invReceivedDate:"receivedDate",invSource:"source",invBill:"bill",invValue:"value",invLocation:"location",invCondition:"condition",invBreakdownDate:"breakdownDate",invRepairDate:"repairDate",invRepairDetails:"repairDetails",invCondemnDate:"condemnDate",invRemarks:"remarks"};Object.keys(m).forEach(k=>$(k).value=r[m[k]]||"");}
 window.deleteInventory=function(id){if(confirm("यह entry delete करें?")){put(data().filter(x=>x.id!==id));inventoryReport()}}
 window.inventoryReport=function(){let a=data(),h='<h3>Inventory Report</h3><table border="1" style="border-collapse:collapse;width:100%"><tr><th>Item</th><th>Qty</th><th>Category</th><th>Batch/Serial</th><th>Received</th><th>Source</th><th>Location</th><th>Condition</th><th>Breakdown</th><th>Repair</th><th>Condemn</th><th>Action</th></tr>';a.forEach(r=>h+='<tr><td>'+r.name+'</td><td>'+r.qty+' '+r.unit+'</td><td>'+r.category+'</td><td>'+r.serial+'</td><td>'+r.receivedDate+'</td><td>'+r.source+'</td><td>'+r.location+'</td><td>'+r.condition+'</td><td>'+r.breakdownDate+'</td><td>'+r.repairDate+'</td><td>'+r.condemnDate+'</td><td><button onclick="editInventory(\''+r.id+'\')">Edit</button> <button onclick="deleteInventory(\''+r.id+'\')">Delete</button></td></tr>');$("inventoryReport").innerHTML=h+'</table>'}
-window.printInventory=function(){let a=data();let h='<html><head><title>Inventory Register</title><style>@page{size:A4 landscape;margin:8mm}body{font-family:Arial;font-size:9px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #222;padding:3px}</style></head><body><h2>Inventory Register — Ayushman Arogya Mandir Dharampur</h2><table><tr><th>Item</th><th>Qty</th><th>Category</th><th>Batch/Serial</th><th>Date Received</th><th>Received From</th><th>Bill</th><th>Location</th><th>Condition</th><th>Breakdown</th><th>Repair</th><th>Condemn</th><th>Remarks</th></tr>';a.forEach(r=>h+='<tr><td>'+r.name+'</td><td>'+r.qty+' '+r.unit+'</td><td>'+r.category+'</td><td>'+r.serial+'</td><td>'+r.receivedDate+'</td><td>'+r.source+'</td><td>'+r.bill+'</td><td>'+r.location+'</td><td>'+r.condition+'</td><td>'+r.breakdownDate+'</td><td>'+r.repairDate+'</td><td>'+r.condemnDate+'</td><td>'+r.remarks+'</td></tr>');h+='</table></body></html>';let w=open("","_blank");w.document.write(h);w.document.close();w.print()}
+window.printInventory=function(){let a=data();let h='<html><head><title>Inventory Register</title><style>@page{size:A4 landscape;margin:8mm}body{font-family:Arial;font-size:9px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #222;padding:3px}</style></head><body><h2>Inventory Register — Ayushman Arogya Mandir Dharampur</h2><table><tr><th>Item</th><th>Qty</th><th>Category</th><th>Batch/Serial</th><th>Date Received</th><th>Received From</th><th>Bill</th><th>Location</th><th>Condition</th><th>Breakdown</th><th>Repair</th><th>Condemn</th><th>Remarks</th></tr>';a.forEach(r=>h+='<tr><td>'+r.name+'</td><td>'+r.qty+' '+r.unit+'</td><td>'+r.category+'</td><td>'+r.serial+'</td><td>'+r.receivedDate+'</td><td>'+r.source+'</td><td>'+r.bill+'</td><td>'+r.location+'</td><td>'+r.condition+'</td><td>'+r.breakdownDate+'</td><td>'+r.repairDate+'</td><td>'+r.condemnDate+'</td><td>'+r.remarks+'</td></tr>');h+='</table><div style="margin-top:28px;padding-top:8px;border-top:1px solid #aaa;text-align:center;font-size:10px"><b>Rahul Sharma</b><br>Ayushman Arogya Mandir Dharampur, Littipara, Pakur, Jharkhand</div></body></html>';let w=open("","_blank");w.document.write(h);w.document.close();w.print()}
 document.addEventListener("DOMContentLoaded",()=>{populate();inventoryReport()})
 })();
 </script>
@@ -891,7 +892,7 @@ function populateSDMonthFilter(){
 function renderSectionDashNav(){const box=$('sectionDashNav');if(!box)return;box.innerHTML=SECTION_DASH_ITEMS.map(x=>`<button class="${x.id===activeSectionDash?'active':''}" onclick="showSectionDashboard('${x.id}')">${esc(x.label)}</button>`).join('')}
 function showSectionDashboard(id){activeSectionDash=id;renderSectionDashNav();const item=SECTION_DASH_ITEMS.find(x=>x.id===id)||SECTION_DASH_ITEMS[0];SD_RENDERING=true;$('sectionDashDetail').innerHTML=sdDetail(item);SD_RENDERING=false}
 window.showSectionDashboard=showSectionDashboard;
-window.printSectionDashboard=function(id){const item=SECTION_DASH_ITEMS.find(x=>x.id===id)||SECTION_DASH_ITEMS[0];const detail=sdDetail(item);const w=open('','_blank');w.document.write(`<html><head><title>${item.label} Dashboard</title><style>@page{size:A4 landscape;margin:8mm}body{font-family:Arial,sans-serif;color:#182230;font-size:10px}h2{margin:0 0 8px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #444;padding:4px}th{background:#eee}.cards{display:flex;gap:7px;flex-wrap:wrap}.card{border:1px solid #aaa;padding:8px;min-width:120px}.value{font-size:18px;font-weight:bold}</style></head><body><h2>Ayushman Arogya Mandir Dharampur — ${item.label} Dashboard</h2>${detail.replace(/<button[\s\S]*?<\/button>/g,'')}</body></html>`);w.document.close();w.print()};
+window.printSectionDashboard=function(id){const item=SECTION_DASH_ITEMS.find(x=>x.id===id)||SECTION_DASH_ITEMS[0];const detail=sdDetail(item);const w=open('','_blank');w.document.write(`<html><head><title>${item.label} Dashboard</title><style>@page{size:A4 landscape;margin:8mm}body{font-family:Arial,sans-serif;color:#182230;font-size:10px}h2{margin:0 0 8px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #444;padding:4px}th{background:#eee}.cards{display:flex;gap:7px;flex-wrap:wrap}.card{border:1px solid #aaa;padding:8px;min-width:120px}.value{font-size:18px;font-weight:bold}</style></head><body><h2>Ayushman Arogya Mandir Dharampur, Littipara, Pakur, Jharkhand — ${item.label} Dashboard</h2>${detail.replace(/<button[\s\S]*?<\/button>/g,'')}<div style="margin-top:28px;padding-top:8px;border-top:1px solid #aaa;text-align:center;font-size:10px"><b>Rahul Sharma</b></div></body></html>`);w.document.close();w.print()};
 document.addEventListener('DOMContentLoaded',()=>{renderSectionDashNav();showSectionDashboard('daily'); populateSDMonthFilter();});
 
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.v));
@@ -1375,7 +1376,7 @@ function renderPrintArea(modeLabel,ds,cards,sum){
  ${section("Diagnostic Usage","kitReport")}
  ${section("ANC / EDD / HRP","ancReport")}
  ${section("Activities","activityReport")}
- ${section("Patient / Follow-up","patientReport")}`;
+ ${section("Patient / Follow-up","patientReport")}<div class="print-footer"><b>Ayushman Arogya Mandir Dharampur, Littipara, Pakur, Jharkhand</b><br>Rahul Sharma</div>`;
 }
 
 
@@ -1480,7 +1481,7 @@ $("vpop").oninput=()=>{updateTolaTotal();renderTargetPreview()};
 $("vTargetReportBtn")?.addEventListener("click",renderVillageTargetReport);
 $("vTargetScope")?.addEventListener("change",()=>{let w=$("vTargetVillage");if(w)w.style.display=$("vTargetScope").value==='village'?'block':'none';renderVillageTargetReport()});
 $("vTargetVillage")?.addEventListener("change",renderVillageTargetReport);
-$("vTargetPrintBtn")?.addEventListener("click",()=>{const pa=$("printArea");if(!pa)return;pa.innerHTML='<h1>HSC Tracker — Village Population Target Report</h1><div class="printmeta">Generated: '+new Date().toLocaleString('en-IN')+'</div>'+($("vTargetReportSummary")?.outerHTML||'')+($("vTargetReportTable")?.outerHTML||'');document.body.classList.add('report-print-mode');setTimeout(()=>window.print(),100);setTimeout(()=>document.body.classList.remove('report-print-mode'),1000)});
+$("vTargetPrintBtn")?.addEventListener("click",()=>{const pa=$("printArea");if(!pa)return;pa.innerHTML='<h1>HSC Tracker — Village Population Target Report</h1><div class="printmeta">Ayushman Arogya Mandir Dharampur, Littipara, Pakur, Jharkhand<br>Generated: '+new Date().toLocaleString('en-IN')+'</div>'+($("vTargetReportSummary")?.outerHTML||'')+($("vTargetReportTable")?.outerHTML||'')+'<div class="print-footer"><b>Rahul Sharma</b></div>';document.body.classList.add('report-print-mode');setTimeout(()=>window.print(),100);setTimeout(()=>document.body.classList.remove('report-print-mode'),1000)});
 renderTargetPreview();
 $("addTolaBtn").onclick=()=>addTolaRow();
 $("vform").onsubmit=e=>{
@@ -2260,7 +2261,7 @@ try{rfReset();rfReportUI()}catch(e){console.error("Referral init",e)}
     const map={ep:['Elderly & Palliative Register','epTable','epReport'],mc:['Medicine Consumption Register','mcTable','mcReport'],dc:['Diagnostic Consumption Register','dcTable','dcReport'],ln:['Linen Register','lnTable','lnReport'],sm:['Staff Movement Tracker','smTable','smReport'],in:['Indent Register','inTable','inReport'],bw:['Bio-Medical Waste Register','bwTable','bwReport'],st:['Sterilisation Register','stTable','stReport'],q:['PDCA / CAPA Quality Register','qTable','qReport'],kpi:['Automatic KPI Dashboard','kpiAutoTable',null]};
     const x=map[prefix]; if(!x)return; title=x[0]; tableId=x[1]; summary=x[2];
     const t=A(tableId), s=summary&&A(summary); if(!t)return;
-    A('printArea').innerHTML=`<h1>🏥 Ayushman Arogya Mandir Dharampur</h1><div class="printmeta">केंद्र — धरमपुर, प्रखंड — लिट्टीपाड़ा (पाकुड़) • ${esc(title)} • Printed: ${d0}</div>${s?'<div class="printmeta">'+s.innerText+'</div>':''}${t.outerHTML}`;
+    A('printArea').innerHTML=`<h1>🏥 Ayushman Arogya Mandir Dharampur</h1><div class="printmeta">केंद्र — धरमपुर, प्रखंड — लिट्टीपाड़ा (पाकुड़) • ${esc(title)} • Printed: ${d0}</div>${s?'<div class="printmeta">'+s.innerText+'</div>':''}${t.outerHTML}<div class="print-footer"><b>Rahul Sharma</b><br>Ayushman Arogya Mandir Dharampur, Littipara, Pakur, Jharkhand</div>`;
     document.body.classList.add('report-print-mode'); window.print(); setTimeout(()=>document.body.classList.remove('report-print-mode'),800);
   };
   const EDITCFG={
