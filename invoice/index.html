@@ -143,6 +143,11 @@ table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:7p
     margin:0;
   }
 }
+
+.saved-bill-row{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:8px;align-items:center;border:1px solid #ddd;border-radius:8px;padding:9px;margin-top:7px;background:#fff}
+.saved-bill-row button{padding:7px 10px}
+.saved-bill-empty{padding:12px;border:1px dashed #bbb;border-radius:8px;color:#666}
+@media(max-width:550px){.saved-bill-row{grid-template-columns:1fr 1fr}.saved-bill-row .saved-meta{grid-column:1/-1}.saved-bill-row .saved-actions{grid-column:1/-1;display:flex;gap:6px}.saved-bill-row .saved-actions button{flex:1}}
 </style>
 
 
@@ -208,6 +213,18 @@ table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:7p
 <div><label>Final Total</label><input id="finalTotal" readonly></div>
 </div>
 <div class="actions"><button class="green" onclick="generateInvoice()">Generate Invoice</button><button type="button" class="primary" onclick="printInvoice()">Download / Save PDF</button><button class="gray" onclick="saveBill()">Save Bill</button></div>
+</div>
+
+<div class="card no-print" id="savedBillsCard">
+<h2>Saved Bills & Backup</h2>
+<div class="actions">
+<button class="gray" type="button" onclick="refreshSavedBills()">Refresh Saved Bills</button>
+<button class="gray" type="button" onclick="backupBills()">Backup All Bills</button>
+<button class="gray" type="button" onclick="document.getElementById('restoreFile').click()">Restore Backup</button>
+<input id="restoreFile" type="file" accept="application/json,.json" style="display:none" onchange="restoreBills(event)">
+</div>
+<div id="savedBillsList" style="margin-top:12px"></div>
+<small style="display:block;margin-top:8px;color:#666">Saved bills are stored in this browser/device. Take a backup regularly so they can be restored on another device/browser.</small>
 </div>
 </div>
 
@@ -425,6 +442,7 @@ function generateInvoice(){
   ).join("");
 
   $("invoice").style.display="block";
+  saveBill(false);
   return c;
 }
 
@@ -449,26 +467,130 @@ function printInvoice(){
   setTimeout(()=>window.print(),200);
 }
 
-function saveBill(){
-  const data={
-    invoiceNo:$("invoiceNoInput").value,
-    invoiceDate:$("invoiceDate").value,
-    customer:$("customer").value,
-    address:$("address").value,
-    mobile:$("mobile").value,
-    mainVehicle:$("mainVehicle").value,
-    gstMode:$("gstMode").value,
-    gstRate:$("gstRate").value,
-    rent:$("rent").value,
-    driver:$("driver").value,
-    fuel:$("fuel").value,
-    toll:$("toll").value,
-    parking:$("parking").value,
-    trips:tripData()
+function getCurrentBillData(){
+  return {
+    invoiceNo:$('invoiceNoInput').value,
+    invoiceDate:$('invoiceDate').value,
+    customer:$('customer').value,
+    address:$('address').value,
+    mobile:$('mobile').value,
+    mainVehicle:$('mainVehicle').value,
+    gstMode:$('gstMode').value,
+    gstRate:$('gstRate').value,
+    rent:$('rent').value,
+    driver:$('driver').value,
+    fuel:$('fuel').value,
+    toll:$('toll').value,
+    parking:$('parking').value,
+    trips:tripData(),
+    savedAt:new Date().toISOString()
   };
+}
+
+function saveBill(showAlert=true){
+  const data=getCurrentBillData();
+  if(!data.invoiceNo.trim()){ alert("Please enter an Invoice Number."); return; }
   localStorage.setItem("manjulaBill_"+data.invoiceNo,JSON.stringify(data));
   rememberInvoiceNo();
-  alert("Bill saved on this laptop/browser.");
+  refreshSavedBills();
+  if(showAlert) alert("Bill saved on this device/browser.");
+}
+
+function getSavedBills(){
+  const bills=[];
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(!key || !key.startsWith("manjulaBill_")) continue;
+    try{
+      const data=JSON.parse(localStorage.getItem(key));
+      if(data && data.invoiceNo) bills.push(data);
+    }catch(e){}
+  }
+  bills.sort((a,b)=>{
+    const na=getInvoiceSerial(a.invoiceNo), nb=getInvoiceSerial(b.invoiceNo);
+    if(na!==null && nb!==null && na!==nb) return nb-na;
+    return String(b.savedAt||"").localeCompare(String(a.savedAt||""));
+  });
+  return bills;
+}
+
+function escapeHtml(v){
+  return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+}
+
+function refreshSavedBills(){
+  const box=$("savedBillsList");
+  if(!box) return;
+  const bills=getSavedBills();
+  if(!bills.length){
+    box.innerHTML='<div class="saved-bill-empty">No saved bills yet.</div>';
+    return;
+  }
+  box.innerHTML=bills.map(b=>{
+    const days=(b.trips||[]).filter(x=>x.date).length;
+    const km=(b.trips||[]).reduce((a,x)=>a+(Number(x.km)||0),0);
+    const rent=days*Number(b.rent||0), driver=days*Number(b.driver||0), fuel=km*Number(b.fuel||0);
+    const before=rent+driver+fuel+Number(b.toll||0)+Number(b.parking||0);
+    const gst=(rent+driver)*Number(b.gstRate||0)/100;
+    const total=Math.round(before+gst);
+    const d=b.invoiceDate?new Date(b.invoiceDate+"T00:00:00").toLocaleDateString("en-GB"):"";
+    return `<div class="saved-bill-row"><div><b>${escapeHtml(b.invoiceNo)}</b></div><div class="saved-meta">${escapeHtml(d)}</div><div class="saved-meta">${escapeHtml(b.customer||"")}<br><b>₹${total.toLocaleString("en-IN")}</b></div><div class="saved-actions"><button class="primary" type="button" onclick='loadBill(${JSON.stringify(b.invoiceNo)})'>Edit / Open</button><button class="red" type="button" onclick='deleteBill(${JSON.stringify(b.invoiceNo)})'>Delete</button></div></div>`;
+  }).join("");
+}
+
+function loadBill(invoiceNo){
+  const raw=localStorage.getItem("manjulaBill_"+invoiceNo);
+  if(!raw){alert("Saved bill not found.");return;}
+  let data;
+  try{data=JSON.parse(raw);}catch(e){alert("Saved bill is damaged.");return;}
+  ["invoiceNoInput","invoiceDate","customer","address","mobile","mainVehicle","gstMode","gstRate","rent","driver","fuel","toll","parking"].forEach(id=>{
+    if($(id) && data[id]!==undefined) $(id).value=data[id];
+  });
+  $("trips").querySelector("tbody").innerHTML="";
+  (data.trips||[]).forEach(x=>addTrip(x.date||"",x.km||"",x.vehicle||""));
+  if(!(data.trips||[]).length) addTrip($("invoiceDate").value,"",$("mainVehicle").value);
+  calc();
+  generateInvoice();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function deleteBill(invoiceNo){
+  if(!confirm("Delete saved bill " + invoiceNo + "?")) return;
+  localStorage.removeItem("manjulaBill_"+invoiceNo);
+  refreshSavedBills();
+}
+
+function backupBills(){
+  const bills=getSavedBills();
+  if(!bills.length){alert("No saved bills to backup.");return;}
+  const payload={app:"Manjula Infosolutions Invoice App",version:4,exportedAt:new Date().toISOString(),lastInvoice:localStorage.getItem("manjulaLastInvoice")||"",bills};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="Manjula-Invoice-Backup-"+today()+".json";
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+function restoreBills(ev){
+  const file=ev.target.files && ev.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(){
+    try{
+      const payload=JSON.parse(reader.result);
+      if(!payload || !Array.isArray(payload.bills)) throw new Error("Invalid backup");
+      let count=0;
+      payload.bills.forEach(b=>{
+        if(b && b.invoiceNo){localStorage.setItem("manjulaBill_"+b.invoiceNo,JSON.stringify(b));count++;}
+      });
+      const n=Number(payload.lastInvoice);
+      if(Number.isFinite(n)) localStorage.setItem("manjulaLastInvoice",String(n));
+      refreshSavedBills();
+      alert(count+" bill(s) restored successfully.");
+    }catch(e){alert("Invalid backup file.");}
+    ev.target.value="";
+  };
+  reader.readAsText(file);
 }
 
 function autoInvoiceNo(){
@@ -514,6 +636,7 @@ function init(){
   $("mainVehicle").addEventListener("input",calc);
 
   setupTripDateHandler();
+  refreshSavedBills();
 
   // Start with exactly one editable trip.
   addTrip($("invoiceDate").value,"",$("mainVehicle").value);
