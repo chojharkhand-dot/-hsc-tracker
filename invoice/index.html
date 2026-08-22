@@ -218,13 +218,14 @@ table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:7p
 <div class="card no-print" id="savedBillsCard">
 <h2>Saved Bills & Backup</h2>
 <div class="actions">
-<button class="gray" type="button" onclick="refreshSavedBills()">Refresh Saved Bills</button>
-<button class="gray" type="button" onclick="backupBills()">Backup All Bills</button>
-<button class="gray" type="button" onclick="document.getElementById('restoreFile').click()">Restore Backup</button>
+<button class="primary" type="button" onclick="refreshSavedBills()">📋 Show All Saved Bills</button>
+<button class="green" type="button" onclick="backupBills()">💾 Backup All Bills</button>
+<button class="gray" type="button" onclick="document.getElementById('restoreFile').click()">↩ Restore Backup</button>
+<button class="gray" type="button" onclick="newBill()">＋ New Bill</button>
 <input id="restoreFile" type="file" accept="application/json,.json" style="display:none" onchange="restoreBills(event)">
 </div>
 <div id="savedBillsList" style="margin-top:12px"></div>
-<small style="display:block;margin-top:8px;color:#666">Saved bills are stored in this browser/device. Take a backup regularly so they can be restored on another device/browser.</small>
+<small style="display:block;margin-top:8px;color:#666">सभी saved bills इसी browser/device में दिखाई देंगे। Edit/Open से bill वापस खोलें, Delete से हटाएँ। Backup All Bills से backup file बनाकर दूसरे mobile/laptop में Restore कर सकते हैं।</small>
 </div>
 </div>
 
@@ -326,7 +327,7 @@ function nextTripDate(){
     const lastDate=rows[rows.length-1].querySelector('input[type="date"]');
     if(lastDate && lastDate.value) return addOneDay(lastDate.value);
   }
-  return $("invoiceDate").value || today();
+  return today();
 }
 
 function updateFollowingDates(row){
@@ -563,7 +564,7 @@ function deleteBill(invoiceNo){
 function backupBills(){
   const bills=getSavedBills();
   if(!bills.length){alert("No saved bills to backup.");return;}
-  const payload={app:"Manjula Infosolutions Invoice App",version:4,exportedAt:new Date().toISOString(),lastInvoice:localStorage.getItem("manjulaLastInvoice")||"",bills};
+  const payload={app:"Manjula Infosolutions Invoice App",version:5,exportedAt:new Date().toISOString(),lastInvoice:localStorage.getItem("manjulaLastInvoice")||"",bills};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
@@ -593,13 +594,30 @@ function restoreBills(ev){
   reader.readAsText(file);
 }
 
-function autoInvoiceNo(){
-  const d=new Date(($('invoiceDate').value||today())+"T00:00:00");
+function newBill(){
+  // Start a fresh bill without deleting saved bills.
+  const last=Number(localStorage.getItem("manjulaLastInvoice")||56);
+  const next=Math.max(last+1,57);
+  $("invoiceNoInput").value="MIS/LP/"+String(next).padStart(3,"0")+"/"+financialYearFor(today());
+  $("invoiceDate").value=today();
+  ["customer","address","mobile"].forEach(id=>$(id).value="");
+  $("trips").querySelector("tbody").innerHTML="";
+  addTrip(today(),"",$("mainVehicle").value||"");
+  $("invoice").style.display="none";
+  calc();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function financialYearFor(dateStr){
+  const d=new Date(dateStr+"T00:00:00");
   const y=d.getFullYear(), m=d.getMonth()+1;
-  const fy=m>=4 ? `${String(y).slice(2)}-${String(y+1).slice(2)}` : `${String(y-1).slice(2)}-${String(y).slice(2)}`;
+  return m>=4 ? `${String(y).slice(2)}-${String(y+1).slice(2)}` : `${String(y-1).slice(2)}-${String(y).slice(2)}`;
+}
+
+function autoInvoiceNo(){
   const current=Number(localStorage.getItem("manjulaLastInvoice")||56);
   const saved=current+1;
-  $("invoiceNoInput").value="MIS/LP/"+String(saved).padStart(3,"0")+"/"+fy;
+  $("invoiceNoInput").value="MIS/LP/"+String(saved).padStart(3,"0")+"/"+financialYearFor($("invoiceDate").value||today());
 }
 
 function setupTripDateHandler(){
@@ -628,9 +646,8 @@ function init(){
   });
 
   $("invoiceDate").addEventListener("change",function(){
-    const first=$("trips").querySelector('tbody tr input[type="date"]');
-    if(first) first.value=$("invoiceDate").value;
-    syncAllTripDates();
+    // Invoice date is independent from trip dates.
+    // Changing invoice date must NOT change any trip date.
     calc();
   });
   $("mainVehicle").addEventListener("input",calc);
@@ -638,8 +655,8 @@ function init(){
   setupTripDateHandler();
   refreshSavedBills();
 
-  // Start with exactly one editable trip.
-  addTrip($("invoiceDate").value,"",$("mainVehicle").value);
+  // Start with exactly one editable trip. Trip date is independent of invoice date.
+  addTrip(today(),"",$("mainVehicle").value);
   calc();
 }
 
@@ -649,6 +666,7 @@ window.addEventListener("beforeprint",()=>{
 
 window.addEventListener("afterprint",()=>{
   prepareNextInvoiceNo();
+  refreshSavedBills();
 });
 
 document.addEventListener("DOMContentLoaded",init);
