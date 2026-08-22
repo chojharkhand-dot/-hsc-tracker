@@ -59,6 +59,22 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 @media(max-width:900px){.sd-cards{grid-template-columns:repeat(2,1fr)}.sd-grid{grid-template-columns:1fr}.section-dash-wrap .quick{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.sd-cards{grid-template-columns:1fr 1fr}.sd-bar .name{width:90px}}
 
+
+/* Dedicated section-dashboard look */
+#sectionDashboard .section-dash-wrap{background:#f5f7fa;padding:12px;border-radius:14px}
+#sectionDashboard .section-dash-nav{display:flex;gap:7px;overflow:auto;padding:6px 2px 12px;position:sticky;top:0;background:#f5f7fa;z-index:3}
+#sectionDashboard .section-dash-nav button{white-space:nowrap;border:1px solid #d7dee7;background:#fff;border-radius:9px;padding:8px 12px;font-weight:700;cursor:pointer}
+#sectionDashboard .section-dash-nav button.active{background:#159447;color:#fff;border-color:#159447}
+#sectionDashboard .sd-head{background:#fff;border-radius:12px;padding:16px;margin-bottom:10px;border:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:10px}
+#sectionDashboard .sd-title{font-size:22px;font-weight:800}
+#sectionDashboard .sd-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px}
+#sectionDashboard .sd-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;min-height:90px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+#sectionDashboard .sd-card .label{font-weight:700;color:#475569}.sd-card .value{font-size:25px;font-weight:800;margin-top:6px}.sd-card .hint{font-size:11px;color:#64748b;margin-top:4px}
+#sectionDashboard .sd-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#sectionDashboard .sd-panel{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px}
+#sectionDashboard .sd-panel h3{margin:0 0 10px}
+@media(max-width:800px){#sectionDashboard .sd-grid{grid-template-columns:1fr}#sectionDashboard .sd-head{display:block}.sd-actions{margin-top:10px}}
+
 </style>
 
 <style>
@@ -84,7 +100,7 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 <header>
  <div class="head"><div><div class="title">🏥 HSC Tracker</div><div class="sub">Daily • Monthly • Patient • ANC • Stock • Activities • Reports</div></div><div id="clock"></div></div>
  <nav id="nav">
-  <button class="active" data-v="dashboard">Dashboard</button><button data-v="daily">Daily</button><button data-v="patient">OPD/Patient</button><button data-v="anc">ANC/HRP</button><button data-v="ncd">❤️ NCD</button><button data-v="referral">🔴 Referral</button><button data-v="tb">🫁 TB</button><button data-v="medicine">Medicine</button><button data-v="fpsupply">🟣 FP & Sahiya Supply</button><button data-v="diagnostic">Diagnostic</button><button data-v="activity">Activities</button><button data-v="jas">💰 JAS</button><button data-v="report">Reports</button><button data-v="alerts">🔔 Alerts</button><button data-v="village">🏘️ Village/Tola</button><button data-v="ri">💉 RI Schedule</button><button data-v="delivery">👶 Delivery/HBNC</button><button data-v="bulk">📥 Bulk Import</button><button data-v="elderly">👴 Elderly/Palliative</button><button data-v="medcons">💊 Medicine Consumption</button><button data-v="diagcons">🧪 Diagnostic Consumption</button><button data-v="linen">🧺 Linen</button><button data-v="movement">👥 Staff Movement</button><button data-v="indent">📋 Indent</button><button data-v="bmw">♻️ BMW</button><button data-v="sterilisation">🧼 Sterilisation</button><button data-v="quality">🔄 PDCA/CAPA</button><button data-v="kpiAuto">📊 KPI Dashboard</button><button data-v="backup">Backup/Settings</button><button data-v="inventory">🏥 Inventory Register</button>
+  <button class="active" data-v="dashboard">Dashboard</button><button data-v="sectionDashboard">📊 Section Dashboard</button><button data-v="daily">Daily</button><button data-v="patient">OPD/Patient</button><button data-v="anc">ANC/HRP</button><button data-v="ncd">❤️ NCD</button><button data-v="referral">🔴 Referral</button><button data-v="tb">🫁 TB</button><button data-v="medicine">Medicine</button><button data-v="fpsupply">🟣 FP & Sahiya Supply</button><button data-v="diagnostic">Diagnostic</button><button data-v="activity">Activities</button><button data-v="jas">💰 JAS</button><button data-v="report">Reports</button><button data-v="alerts">🔔 Alerts</button><button data-v="village">🏘️ Village/Tola</button><button data-v="ri">💉 RI Schedule</button><button data-v="delivery">👶 Delivery/HBNC</button><button data-v="bulk">📥 Bulk Import</button><button data-v="elderly">👴 Elderly/Palliative</button><button data-v="medcons">💊 Medicine Consumption</button><button data-v="diagcons">🧪 Diagnostic Consumption</button><button data-v="linen">🧺 Linen</button><button data-v="movement">👥 Staff Movement</button><button data-v="indent">📋 Indent</button><button data-v="bmw">♻️ BMW</button><button data-v="sterilisation">🧼 Sterilisation</button><button data-v="quality">🔄 PDCA/CAPA</button><button data-v="kpiAuto">📊 KPI Dashboard</button><button data-v="backup">Backup/Settings</button><button data-v="inventory">🏥 Inventory Register</button>
 </nav>
 </header>
 <main>
@@ -101,14 +117,16 @@ body.report-print-mode #printArea{display:block!important;position:static!import
  <div class="section"><h2>🔔 Dashboard Alerts</h2><span class="muted">Follow-up, risk, medicine/diagnostic stock और RI alerts</span></div><div id="dashAlerts" class="grid"></div>
  <div class="section"><h2>आज की Report</h2></div><div class="tablewrap"><table class="table" id="todayTable"></table></div>
 
-<!-- Section-wise dashboard: all existing HWC Tracker modules -->
-<div class="section-dash-wrap" id="sectionDashboardWrap">
-  <div class="section"><h2>📊 HWC Tracker — Section-wise Dashboard</h2><span class="muted">हर existing section का data यहाँ summary/dashboard में देखें</span></div>
+</section>
+
+<section id="sectionDashboard" class="view">
+ <div class="section"><h2>📊 HWC Tracker — Section Dashboard</h2><span class="muted">किसी भी section को चुनकर उसका पूरा dashboard देखें</span></div>
+ <div class="card" style="margin-bottom:12px"><div class="grid"><div class="field"><label>Month</label><select id="sdMonthFilter"><option value="all">All Months</option></select></div><div class="field"><label>View</label><select id="sdViewFilter"><option value="summary">Summary Dashboard</option><option value="records">Detailed Records</option></select></div></div></div>
+ <div class="section-dash-wrap" id="sectionDashboardWrap">
   <div class="section-dash-nav" id="sectionDashNav"></div>
   <div id="sectionDashDetail"></div>
-</div>
+ </div>
 
-</section>
 
 
 <section id="daily" class="view">
@@ -830,11 +848,12 @@ function sdMonthPanel(item){const keys=item.keys.filter(k=>Array.isArray(S[k]));
 function sdTable(heads,rows){return `<div style="overflow:auto"><table class="sd-table"><thead><tr>${heads.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(v=>`<td>${sdSafe(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
 function sdKpiAuto(item){const d=sdArr('daily'),p=sdArr('patients'),a=sdArr('anc');const metrics=[['OPD',d.reduce((t,x)=>t+(+x.opd||0),0),'Cumulative daily reports'],['NCD Screening',d.reduce((t,x)=>t+(+x.ncd||0),0),'Cumulative'],['ANC',a.length,'ANC records'],['NCD Patients',p.filter(x=>x.ncd&&x.ncd!=='No').length,'NCD patient records'],['Referrals',sdCount('referrals'),''],['Medicine Items',sdCount('med'),'Stock entries']];return sdCustom(item,metrics,[],[])}
 function sdAlerts(item){const p=sdArr('patients'),a=sdArr('anc');const due=[...p,...a].filter(x=>x.next&&x.next<=today).length;const risks=p.filter(x=>{let bp=String(x.bp||'').match(/(\d{2,3})\s*[/\-]\s*(\d{2,3})/);return (bp&&(+bp[1]>=140||+bp[2]>=90))||(+x.rbs>=200)}).length;return sdCustom(item,[['Follow-up Due',due,'Patients + ANC'],['Clinical Risk',risks,'BP/RBS risk flags'],['Alert Recipients',Array.isArray(S.alertRecipients)?S.alertRecipients.length:0,'Saved recipients']],[],[])}
+function populateSDMonthFilter(){const sel=$('sdMonthFilter');if(!sel)return;const months=new Set();SECTION_DASH_ITEMS.forEach(it=>it.keys.forEach(k=>sdArr(k).forEach(x=>{const d=sdDate(x);if(d)months.add(d.slice(0,7));})));[...months].sort().reverse().forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o)});sel.onchange=()=>showSectionDashboard(activeSectionDash);}
 function renderSectionDashNav(){const box=$('sectionDashNav');if(!box)return;box.innerHTML=SECTION_DASH_ITEMS.map(x=>`<button class="${x.id===activeSectionDash?'active':''}" onclick="showSectionDashboard('${x.id}')">${esc(x.label)}</button>`).join('')}
 function showSectionDashboard(id){activeSectionDash=id;renderSectionDashNav();const item=SECTION_DASH_ITEMS.find(x=>x.id===id)||SECTION_DASH_ITEMS[0];$('sectionDashDetail').innerHTML=sdDetail(item)}
 window.showSectionDashboard=showSectionDashboard;
 window.printSectionDashboard=function(id){const item=SECTION_DASH_ITEMS.find(x=>x.id===id)||SECTION_DASH_ITEMS[0];const detail=sdDetail(item);const w=open('','_blank');w.document.write(`<html><head><title>${item.label} Dashboard</title><style>@page{size:A4 landscape;margin:8mm}body{font-family:Arial,sans-serif;color:#182230;font-size:10px}h2{margin:0 0 8px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #444;padding:4px}th{background:#eee}.cards{display:flex;gap:7px;flex-wrap:wrap}.card{border:1px solid #aaa;padding:8px;min-width:120px}.value{font-size:18px;font-weight:bold}</style></head><body><h2>Ayushman Arogya Mandir Dharampur — ${item.label} Dashboard</h2>${detail.replace(/<button[\s\S]*?<\/button>/g,'')}</body></html>`);w.document.close();w.print()};
-document.addEventListener('DOMContentLoaded',()=>{renderSectionDashNav();showSectionDashboard('daily')});
+document.addEventListener('DOMContentLoaded',()=>{renderSectionDashNav();showSectionDashboard('daily'); populateSDMonthFilter();});
 
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.v));
 function n(id){return +$(id).value||0}
