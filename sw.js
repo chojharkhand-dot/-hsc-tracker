@@ -1,4 +1,4 @@
-const CACHE='hsc-tracker-v42-final-fixes';
+const CACHE='hsc-tracker-v52-final-fix-nav';
 const AS=['./','./index.html','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
