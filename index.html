@@ -74,6 +74,11 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 #sectionDashboard .sd-panel{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px}
 #sectionDashboard .sd-panel h3{margin:0 0 10px}
 @media(max-width:800px){#sectionDashboard .sd-grid{grid-template-columns:1fr}#sectionDashboard .sd-head{display:block}.sd-actions{margin-top:10px}}
+#sectionDashboard .sd-filter-grid{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:10px;align-items:end}
+#sectionDashboard .sd-filter-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px}
+#sectionDashboard .sd-filter-note{margin-top:8px;font-size:12px;color:#64748b}
+@media(max-width:900px){#sectionDashboard .sd-filter-grid{grid-template-columns:repeat(2,minmax(130px,1fr))}}
+
 
 </style>
 
@@ -121,7 +126,13 @@ body.report-print-mode #printArea{display:block!important;position:static!import
 
 <section id="sectionDashboard" class="view">
  <div class="section"><h2>📊 HWC Tracker — Section Dashboard</h2><span class="muted">किसी भी section को चुनकर उसका पूरा dashboard देखें</span></div>
- <div class="card" style="margin-bottom:12px"><div class="grid"><div class="field"><label>Month</label><select id="sdMonthFilter"><option value="all">All Months</option></select></div><div class="field"><label>View</label><select id="sdViewFilter"><option value="summary">Summary Dashboard</option><option value="records">Detailed Records</option></select></div></div></div>
+ <div class="card sd-filter-card" style="margin-bottom:12px"><div class="sd-filter-grid">
+  <div class="field"><label>📅 Report View</label><select id="sdGranularity"><option value="day">Day-wise</option><option value="month" selected>Month-wise</option><option value="year">Year-wise</option></select></div>
+  <div class="field" id="sdDayField"><label>Day</label><input type="date" id="sdDayFilter"></div>
+  <div class="field" id="sdMonthField"><label>Month</label><input type="month" id="sdMonthFilter"></div>
+  <div class="field" id="sdYearField"><label>Year</label><select id="sdYearFilter"></select></div>
+  <div class="field"><label>Display</label><select id="sdViewFilter"><option value="summary">Summary Dashboard</option><option value="records">Detailed Records</option></select></div>
+ </div><div class="sd-filter-note">किसी भी section को चुनकर उसका data <b>दिन / महीना / वर्ष</b> के अनुसार देखें। Filter बदलते ही cards, indicators, trend और table अपने-आप update होंगे।</div></div>
  <div class="section-dash-wrap" id="sectionDashboardWrap">
   <div class="section-dash-nav" id="sectionDashNav"></div>
   <div id="sectionDashDetail"></div>
@@ -755,9 +766,19 @@ const SECTION_DASH_ITEMS=[
  {id:'inventory',label:'🏥 Inventory',keys:[]}
 ];
 let activeSectionDash='daily';
-function sdArr(k){return Array.isArray(S[k])?S[k]:[]}
+let SD_FILTER={granularity:'month',day:'',month:'',year:''};
+let SD_RENDERING=false;
+function sdRawArr(k){return Array.isArray(S[k])?S[k]:[]}
+function sdInFilter(x){
+  const d=sdDate(x); if(!d) return true;
+  if(SD_FILTER.granularity==='day') return !SD_FILTER.day || d===SD_FILTER.day;
+  if(SD_FILTER.granularity==='month') return !SD_FILTER.month || d.startsWith(SD_FILTER.month);
+  if(SD_FILTER.granularity==='year') return !SD_FILTER.year || d.slice(0,4)===String(SD_FILTER.year);
+  return true;
+}
+function sdArr(k){const a=sdRawArr(k);return SD_RENDERING?a.filter(sdInFilter):a}
 function sdCount(k){return sdArr(k).length}
-function sdDate(x){return String(x?.date||x?.receivedDate||x?.musedate||'').slice(0,10)}
+function sdDate(x){return String(x?.date||x?.receivedDate||x?.musedate||x?.dob||x?.issuedDate||x?.startDate||x?.createdAt||'').slice(0,10)}
 function sdMonthCount(arr,months=6){
   const now=new Date(); const out=[];
   for(let i=months-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const m=d.toISOString().slice(0,7);out.push({m,n:arr.filter(x=>sdDate(x).startsWith(m)).length})}
@@ -839,18 +860,36 @@ function sdDetail(item){
 }
 function sdCustom(item,metrics,rows,heads){
   const bars=metrics.slice(0,4).map((m,i)=>`<div class="sd-bar"><div class="name">${esc(m[0])}</div><div class="track"><div class="fill" style="width:${Math.min(100,(Number(m[1])||0)>0?Math.min(100,20+((Number(m[1])||0)%80)):0)}%"></div></div><div class="num">${esc(m[1])}</div></div>`).join('');
-  return `<div class="sd-head"><div><div class="sd-title">${esc(item.label.replace(/^\S+\s/,''))} Dashboard</div><div class="sd-sub">Existing register data से automatically generated summary</div></div><div class="sd-actions"><button class="primary" onclick="go('${item.id}')">Open Register</button><button onclick="printSectionDashboard('${item.id}')">🖨️ Print / PDF</button></div></div><div class="sd-cards">${metrics.map(m=>sdMetric(m[0],m[1],m[2])).join('')}</div><div class="sd-grid"><div class="sd-panel"><h3>📈 Indicator Summary</h3>${bars||'<div class="sd-note">No indicators available.</div>'}</div><div class="sd-panel"><h3>📅 Last 6 Months</h3>${sdMonthPanel(item)}</div></div><div class="sd-panel" style="margin-top:10px"><h3>📋 Recent Data</h3>${rows&&rows.length?sdTable(heads,rows):'<div class="sd-empty">अभी इस section में कोई data saved नहीं है।</div>'}</div>`;
+  const period=SD_FILTER.granularity==='day'?`दिन: ${SD_FILTER.day||'—'}`:SD_FILTER.granularity==='year'?`वर्ष: ${SD_FILTER.year||'—'}`:`माह: ${SD_FILTER.month||'—'}`; return `<div class="sd-head"><div><div class="sd-title">${esc(item.label.replace(/^\S+\s/,''))} Dashboard</div><div class="sd-sub">${period} • Existing register data से automatically generated summary</div></div><div class="sd-actions"><button class="primary" onclick="go('${item.id}')">Open Register</button><button onclick="printSectionDashboard('${item.id}')">🖨️ Print / PDF</button></div></div><div class="sd-cards">${metrics.map(m=>sdMetric(m[0],m[1],m[2])).join('')}</div><div class="sd-grid"><div class="sd-panel"><h3>📈 Indicator Summary</h3>${bars||'<div class="sd-note">No indicators available.</div>'}</div><div class="sd-panel"><h3>📅 Last 6 Months</h3>${sdMonthPanel(item)}</div></div><div class="sd-panel" style="margin-top:10px"><h3>📋 Recent Data</h3>${rows&&rows.length?sdTable(heads,rows):'<div class="sd-empty">अभी इस section में कोई data saved नहीं है।</div>'}</div>`;
 }
 function sdArraySimple(item,key,heads){const a=sdArr(key);const metrics=[['Total Records',a.length,'Saved entries'],['This Month',a.filter(x=>sdDate(x).startsWith(thisMonth)).length,'Current month'],['Last 7 Days',a.filter(x=>{const d=new Date(sdDate(x));return d!='Invalid Date'&&((Date.now()-d.getTime())/86400000)<=7}).length,'Recent entries']];const rows=a.slice().reverse().slice(0,15).map(x=>{const vals=Object.values(x||{});return heads.map((h,i)=>vals[i]??'')});return sdCustom(item,metrics,rows,heads)}
 function sdQuality(item){const a=[...sdArr('pdca'),...sdArr('capa')];return sdCustom(item,[['PDCA',sdCount('pdca'),''],['CAPA',sdCount('capa'),''],['Total Quality Records',a.length,'']],a.slice().reverse().slice(0,15).map(x=>[x.date||'',x.issue||x.problem||'',x.action||x.correctiveAction||'',x.status||'',x.remark||'']),['Date','Issue / Problem','Action','Status','Remarks']);}
 function sdGeneric(item){const keys=item.keys.filter(k=>Array.isArray(S[k]));const a=keys.flatMap(k=>sdArr(k));const metrics=[['Total Records',a.length,'Across linked register(s)'],['This Month',a.filter(x=>sdDate(x).startsWith(thisMonth)).length,'Current month'],['Last 30 Days',a.filter(x=>{const d=new Date(sdDate(x));return d!='Invalid Date'&&((Date.now()-d.getTime())/86400000)<=30}).length,'Recent'],['Linked Registers',keys.length,'']];const rows=a.slice().reverse().slice(0,15).map(x=>{const vals=Object.values(x||{});return vals.slice(0,6)});return sdCustom(item,metrics,rows,rows.length?['Field 1','Field 2','Field 3','Field 4','Field 5','Field 6']:[])}
-function sdMonthPanel(item){const keys=item.keys.filter(k=>Array.isArray(S[k]));const a=keys.flatMap(k=>sdArr(k));const ms=sdMonthCount(a,6);const max=Math.max(1,...ms.map(x=>x.n));return ms.map(x=>`<div class="sd-bar"><div class="name">${esc(x.m)}</div><div class="track"><div class="fill" style="width:${Math.round(x.n/max*100)}%"></div></div><div class="num">${x.n}</div></div>`).join('')||'<div class="sd-note">No monthly data.</div>'}
+function sdTrendData(item){
+  const keys=item.keys.filter(k=>Array.isArray(S[k])); const a=keys.flatMap(k=>sdRawArr(k)).filter(x=>sdDate(x));
+  const mode=SD_FILTER.granularity;
+  if(mode==='day'){
+    const base=SD_FILTER.day?new Date(SD_FILTER.day+'T00:00:00'):new Date();
+    const out=[]; for(let i=6;i>=0;i--){const d=new Date(base);d.setDate(base.getDate()-i);const iso=d.toISOString().slice(0,10);out.push({m:iso.slice(5),n:a.filter(x=>sdDate(x)===iso).length})} return out;
+  }
+  if(mode==='year'){
+    const y=+(SD_FILTER.year||new Date().getFullYear()); return Array.from({length:5},(_,i)=>{const yy=String(y-4+i);return {m:yy,n:a.filter(x=>sdDate(x).slice(0,4)===yy).length}});
+  }
+  const y=(SD_FILTER.month||new Date().toISOString().slice(0,7)).slice(0,4); return Array.from({length:12},(_,i)=>{const mm=String(i+1).padStart(2,'0');const key=y+'-'+mm;return {m:key,n:a.filter(x=>sdDate(x).startsWith(key)).length}});
+}
+function sdMonthPanel(item){const ms=sdTrendData(item);const max=Math.max(1,...ms.map(x=>x.n));const title=SD_FILTER.granularity==='day'?'📅 Last 7 Days':SD_FILTER.granularity==='year'?'📆 Year-wise Trend':'📆 Month-wise Trend';return `<div class="sd-trend-title">${title}</div>`+ms.map(x=>`<div class="sd-bar"><div class="name">${esc(x.m)}</div><div class="track"><div class="fill" style="width:${Math.round(x.n/max*100)}%"></div></div><div class="num">${x.n}</div></div>`).join('')||'<div class="sd-note">No data for selected period.</div>'}
 function sdTable(heads,rows){return `<div style="overflow:auto"><table class="sd-table"><thead><tr>${heads.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(v=>`<td>${sdSafe(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
 function sdKpiAuto(item){const d=sdArr('daily'),p=sdArr('patients'),a=sdArr('anc');const metrics=[['OPD',d.reduce((t,x)=>t+(+x.opd||0),0),'Cumulative daily reports'],['NCD Screening',d.reduce((t,x)=>t+(+x.ncd||0),0),'Cumulative'],['ANC',a.length,'ANC records'],['NCD Patients',p.filter(x=>x.ncd&&x.ncd!=='No').length,'NCD patient records'],['Referrals',sdCount('referrals'),''],['Medicine Items',sdCount('med'),'Stock entries']];return sdCustom(item,metrics,[],[])}
 function sdAlerts(item){const p=sdArr('patients'),a=sdArr('anc');const due=[...p,...a].filter(x=>x.next&&x.next<=today).length;const risks=p.filter(x=>{let bp=String(x.bp||'').match(/(\d{2,3})\s*[/\-]\s*(\d{2,3})/);return (bp&&(+bp[1]>=140||+bp[2]>=90))||(+x.rbs>=200)}).length;return sdCustom(item,[['Follow-up Due',due,'Patients + ANC'],['Clinical Risk',risks,'BP/RBS risk flags'],['Alert Recipients',Array.isArray(S.alertRecipients)?S.alertRecipients.length:0,'Saved recipients']],[],[])}
-function populateSDMonthFilter(){const sel=$('sdMonthFilter');if(!sel)return;const months=new Set();SECTION_DASH_ITEMS.forEach(it=>it.keys.forEach(k=>sdArr(k).forEach(x=>{const d=sdDate(x);if(d)months.add(d.slice(0,7));})));[...months].sort().reverse().forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o)});sel.onchange=()=>showSectionDashboard(activeSectionDash);}
+function populateSDMonthFilter(){
+  const now=new Date(); const day=$('sdDayFilter'),month=$('sdMonthFilter'),year=$('sdYearFilter'),gran=$('sdGranularity');
+  if(day) day.value=now.toISOString().slice(0,10); if(month) month.value=now.toISOString().slice(0,7); SD_FILTER.day=day?.value||''; SD_FILTER.month=month?.value||'';
+  if(year){const years=new Set([String(now.getFullYear())]);SECTION_DASH_ITEMS.forEach(it=>it.keys.forEach(k=>sdRawArr(k).forEach(x=>{const d=sdDate(x);if(d)years.add(d.slice(0,4))})));year.innerHTML=[...years].sort((a,b)=>b-a).map(y=>`<option value="${y}">${y}</option>`).join('');year.value=String(now.getFullYear());SD_FILTER.year=year.value;}
+  function refresh(){SD_FILTER.granularity=gran?.value||'month';SD_FILTER.day=day?.value||'';SD_FILTER.month=month?.value||'';SD_FILTER.year=year?.value||'';if(day)day.parentElement.style.display=SD_FILTER.granularity==='day'?'block':'none';if(month)month.parentElement.style.display=SD_FILTER.granularity==='month'?'block':'none';if(year)year.parentElement.style.display=SD_FILTER.granularity==='year'?'block':'none';showSectionDashboard(activeSectionDash)}
+  [gran,day,month,year,$('sdViewFilter')].forEach(el=>el&&el.addEventListener('change',refresh)); refresh();
+}
 function renderSectionDashNav(){const box=$('sectionDashNav');if(!box)return;box.innerHTML=SECTION_DASH_ITEMS.map(x=>`<button class="${x.id===activeSectionDash?'active':''}" onclick="showSectionDashboard('${x.id}')">${esc(x.label)}</button>`).join('')}
-function showSectionDashboard(id){activeSectionDash=id;renderSectionDashNav();const item=SECTION_DASH_ITEMS.find(x=>x.id===id)||SECTION_DASH_ITEMS[0];$('sectionDashDetail').innerHTML=sdDetail(item)}
+function showSectionDashboard(id){activeSectionDash=id;renderSectionDashNav();const item=SECTION_DASH_ITEMS.find(x=>x.id===id)||SECTION_DASH_ITEMS[0];SD_RENDERING=true;$('sectionDashDetail').innerHTML=sdDetail(item);SD_RENDERING=false}
 window.showSectionDashboard=showSectionDashboard;
 window.printSectionDashboard=function(id){const item=SECTION_DASH_ITEMS.find(x=>x.id===id)||SECTION_DASH_ITEMS[0];const detail=sdDetail(item);const w=open('','_blank');w.document.write(`<html><head><title>${item.label} Dashboard</title><style>@page{size:A4 landscape;margin:8mm}body{font-family:Arial,sans-serif;color:#182230;font-size:10px}h2{margin:0 0 8px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #444;padding:4px}th{background:#eee}.cards{display:flex;gap:7px;flex-wrap:wrap}.card{border:1px solid #aaa;padding:8px;min-width:120px}.value{font-size:18px;font-weight:bold}</style></head><body><h2>Ayushman Arogya Mandir Dharampur — ${item.label} Dashboard</h2>${detail.replace(/<button[\s\S]*?<\/button>/g,'')}</body></html>`);w.document.close();w.print()};
 document.addEventListener('DOMContentLoaded',()=>{renderSectionDashNav();showSectionDashboard('daily'); populateSDMonthFilter();});
