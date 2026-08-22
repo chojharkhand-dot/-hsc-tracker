@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f766e">
 <link rel="manifest" href="manifest.webmanifest">
-<title>HSC Tracker Final</title>
+<title>HSC Tracker Final V48 — Section Dashboards</title>
 <style>
 :root{--p:#0f766e;--p2:#115e59;--bg:#f4f7f7;--card:#fff;--txt:#182230;--muted:#667085;--line:#e4e7ec;--red:#dc2626;--amber:#d97706;--blue:#2563eb;--green:#047857}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -53,6 +53,12 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field{display:fl
 body.report-print-mode > *:not(#printArea){display:none!important}
 body.report-print-mode #printArea{display:block!important;position:static!important;left:auto!important;top:auto!important;width:100%!important;background:#fff!important;padding:14px!important;color:#111!important}
 @media print{body.report-print-mode > *:not(#printArea){display:none!important} body.report-print-mode #printArea{display:block!important;position:static!important;left:auto!important;top:auto!important;width:100%!important}}
+
+/* Section dashboard layer */
+.section-dash-wrap{margin-top:18px}.section-dash-nav{display:flex;gap:7px;overflow:auto;padding:3px 1px 10px}.section-dash-nav button{border:1px solid var(--line);background:#fff;color:var(--txt);border-radius:10px;padding:9px 11px;white-space:nowrap;font-weight:650;cursor:pointer}.section-dash-nav button.active{background:#0f766e;color:#fff;border-color:#0f766e}.sd-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}.sd-title{font-size:21px;font-weight:850}.sd-sub{color:var(--muted);font-size:12px;margin-top:3px}.sd-actions{display:flex;gap:7px;flex-wrap:wrap}.sd-actions button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 11px;cursor:pointer}.sd-actions .primary{background:#0f766e;color:#fff;border-color:#0f766e}.sd-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}.sd-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px;min-height:94px}.sd-card .label{font-size:12px;color:var(--muted)}.sd-card .value{font-size:26px;font-weight:850;margin-top:4px}.sd-card .hint{font-size:11px;margin-top:3px;color:var(--muted)}.sd-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:10px;margin-top:10px}.sd-panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px;overflow:hidden}.sd-panel h3{margin:0 0 9px;font-size:14px}.sd-table{width:100%;border-collapse:collapse;font-size:12px}.sd-table th,.sd-table td{border:1px solid var(--line);padding:7px;text-align:left}.sd-table th{background:#f8fafc}.sd-bar{display:flex;align-items:center;gap:8px;margin:8px 0}.sd-bar .name{width:130px;font-size:11px}.sd-bar .track{height:9px;background:#edf2f7;border-radius:99px;flex:1;overflow:hidden}.sd-bar .fill{height:100%;background:#0f766e;border-radius:99px}.sd-bar .num{width:48px;text-align:right;font-weight:700;font-size:11px}.sd-note{font-size:12px;color:var(--muted);padding:8px 0}.sd-empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px}.sd-filter{display:flex;gap:8px;align-items:center;margin-top:8px}.sd-filter input{padding:8px;border:1px solid var(--line);border-radius:8px}.section-dash-wrap .quick{grid-template-columns:repeat(6,1fr)}
+@media(max-width:900px){.sd-cards{grid-template-columns:repeat(2,1fr)}.sd-grid{grid-template-columns:1fr}.section-dash-wrap .quick{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.sd-cards{grid-template-columns:1fr 1fr}.sd-bar .name{width:90px}}
+
 </style>
 
 <style>
@@ -94,6 +100,14 @@ body.report-print-mode #printArea{display:block!important;position:static!import
  </div>
  <div class="section"><h2>🔔 Dashboard Alerts</h2><span class="muted">Follow-up, risk, medicine/diagnostic stock और RI alerts</span></div><div id="dashAlerts" class="grid"></div>
  <div class="section"><h2>आज की Report</h2></div><div class="tablewrap"><table class="table" id="todayTable"></table></div>
+
+<!-- Section-wise dashboard: all existing HWC Tracker modules -->
+<div class="section-dash-wrap" id="sectionDashboardWrap">
+  <div class="section"><h2>📊 HWC Tracker — Section-wise Dashboard</h2><span class="muted">हर existing section का data यहाँ summary/dashboard में देखें</span></div>
+  <div class="section-dash-nav" id="sectionDashNav"></div>
+  <div id="sectionDashDetail"></div>
+</div>
+
 </section>
 
 
@@ -687,6 +701,139 @@ function loadDailyDate(){
   renderDailyKitSelectors();
 }
 $("dd").onchange=loadDailyDate;
+
+
+/* ================= Section-wise Dashboard ================= */
+const SECTION_DASH_ITEMS=[
+ {id:'daily',label:'📝 Daily',keys:['daily']},
+ {id:'patient',label:'👥 OPD / Patient',keys:['patients']},
+ {id:'anc',label:'🤰 ANC / HRP',keys:['anc']},
+ {id:'ncd',label:'❤️ NCD',keys:['patients']},
+ {id:'referral',label:'🔴 Referral',keys:['referrals']},
+ {id:'tb',label:'🫁 TB',keys:['patients']},
+ {id:'medicine',label:'💊 Medicine',keys:['med']},
+ {id:'fpsupply',label:'🟣 FP & Sahiya Supply',keys:['fpStock','fpTx']},
+ {id:'diagnostic',label:'🧪 Diagnostic',keys:['kits']},
+ {id:'activity',label:'📋 Activities',keys:['acts']},
+ {id:'jas',label:'💰 JAS',keys:['jasReceipts','jasExpenses']},
+ {id:'report',label:'📑 Reports',keys:['daily','patients']},
+ {id:'alerts',label:'🔔 Alerts',keys:[]},
+ {id:'village',label:'🏘️ Village / Tola',keys:['villages']},
+ {id:'ri',label:'💉 RI Schedule',keys:['ri']},
+ {id:'delivery',label:'👶 Delivery / HBNC',keys:['deliveries']},
+ {id:'bulk',label:'📥 Bulk Import',keys:[]},
+ {id:'elderly',label:'👴 Elderly / Palliative',keys:['elderly','palliative']},
+ {id:'medcons',label:'💊 Medicine Consumption',keys:['meduse']},
+ {id:'diagcons',label:'🧪 Diagnostic Consumption',keys:['kituse']},
+ {id:'linen',label:'🧺 Linen',keys:['linen']},
+ {id:'movement',label:'👥 Staff Movement',keys:['movements']},
+ {id:'indent',label:'📋 Indent',keys:['indents']},
+ {id:'bmw',label:'♻️ BMW',keys:['bmw']},
+ {id:'sterilisation',label:'🧼 Sterilisation',keys:['sterilisation']},
+ {id:'quality',label:'🔄 PDCA / CAPA',keys:['pdca','capa']},
+ {id:'kpiAuto',label:'📊 KPI Dashboard',keys:['daily','patients','anc']},
+ {id:'backup',label:'⚙️ Backup / Settings',keys:[]},
+ {id:'inventory',label:'🏥 Inventory',keys:[]}
+];
+let activeSectionDash='daily';
+function sdArr(k){return Array.isArray(S[k])?S[k]:[]}
+function sdCount(k){return sdArr(k).length}
+function sdDate(x){return String(x?.date||x?.receivedDate||x?.musedate||'').slice(0,10)}
+function sdMonthCount(arr,months=6){
+  const now=new Date(); const out=[];
+  for(let i=months-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const m=d.toISOString().slice(0,7);out.push({m,n:arr.filter(x=>sdDate(x).startsWith(m)).length})}
+  return out;
+}
+function sdMetric(label,value,hint=''){return `<div class="sd-card"><div class="label">${esc(label)}</div><div class="value">${esc(value)}</div><div class="hint">${esc(hint)}</div></div>`}
+function sdSafe(v){return v==null||v===''?'—':esc(String(v))}
+function sdGenericRows(item){
+  const keys=item.keys.filter(k=>Array.isArray(S[k]));
+  const rows=[]; keys.forEach(k=>{const a=sdArr(k);const months=sdMonthCount(a,6);months.forEach(x=>rows.push({section:k,month:x.m,count:x.n}))});
+  return rows;
+}
+function sdDetail(item){
+  const id=item.id;
+  if(id==='ncd'){
+    const a=sdArr('patients').filter(x=>x.ncd&&x.ncd!=='No');
+    const htn=a.filter(x=>/hypertension|htn|high bp/i.test(x.ncd||x.condition||'')).length;
+    const dm=a.filter(x=>/diabet|dm|sugar/i.test(x.ncd||x.condition||'')).length;
+    const due=a.filter(x=>x.next && x.next<=today).length;
+    const villages=new Set(a.map(x=>x.village).filter(Boolean)).size;
+    return sdCustom(item,[['Total NCD Patients',a.length,'Saved NCD records'],['HTN',htn,'Hypertension / HTN'],['Diabetes',dm,'Diabetes / Sugar'],['Due Follow-up',due,'Next follow-up due'],['Villages Covered',villages,'Unique villages']],
+      a.slice().sort((x,y)=>String(y.date||'').localeCompare(String(x.date||''))).slice(0,12).map(x=>[x.date,x.name,x.village,x.ncd||x.condition,x.bp||'',x.rbs||'',x.next||'']),
+      ['Date','Patient','Village','Diagnosis','BP','RBS','Next Follow-up']);
+  }
+  if(id==='anc'){
+    const a=sdArr('anc');const hrp=a.filter(x=>x.hrp==='Yes').length;const due=a.filter(x=>x.next&&x.next<=today).length;const villages=new Set(a.map(x=>x.village).filter(Boolean)).size;
+    return sdCustom(item,[['Total ANC',a.length,'ANC registrations/records'],['HRP',hrp,'High-risk pregnancy'],['Due Follow-up',due,'Next visit due'],['Villages Covered',villages,'Unique villages'],['Hb < 11',a.filter(x=>x.hb!==''&&+x.hb<11).length,'Anaemia risk']],a.slice().reverse().slice(0,12).map(x=>[x.date,x.name,x.village,x.stage,x.hrp,x.hb,x.bp,x.next]),['Date','Name','Village','Visit','HRP','Hb','BP','Next Visit']);
+  }
+  if(id==='tb'){
+    const a=sdArr('patients').filter(x=>String(x.condition||'').toLowerCase()==='tb'||x.tbType);const active=a.filter(x=>!x.treatmentEnd||x.treatmentEnd>=today).length;const due=a.filter(x=>x.next&&x.next<=today).length;const villages=new Set(a.map(x=>x.village).filter(Boolean)).size;
+    return sdCustom(item,[['Total TB Records',a.length,'TB patients'],['Active Treatment',active,'Treatment ongoing'],['Due Follow-up',due,'Next follow-up due'],['Villages',villages,'Unique villages']],a.slice().reverse().slice(0,12).map(x=>[x.date,x.name,x.village,x.tbType||'TB',x.tbPhase||'',x.treatmentStart||'',x.next||'']),['Date','Name','Village','Type','Phase','Treatment Start','Next Follow-up']);
+  }
+  if(id==='patient'){
+    const a=sdArr('patients');const male=a.filter(x=>String(x.sex).toLowerCase().startsWith('m')).length;const female=a.filter(x=>String(x.sex).toLowerCase().startsWith('f')).length;const due=a.filter(x=>x.next&&x.next<=today).length;const villages=new Set(a.map(x=>x.village).filter(Boolean)).size;
+    return sdCustom(item,[['Total Patients',a.length,'All patient/OPD records'],['Male',male,''],['Female',female,''],['Follow-up Due',due,'Next date due'],['Villages',villages,'Unique villages']],a.slice().reverse().slice(0,12).map(x=>[x.date,x.name,x.village,x.age,x.sex,x.condition||x.diagnosis,x.next||'']),['Date','Name','Village','Age','Sex','Diagnosis','Next Follow-up']);
+  }
+  if(id==='medicine'){
+    const a=sdArr('med');const low=a.filter(x=>+x.qty<=10).length;const exp=a.filter(x=>x.expiry&&x.expiry<today).length;const near=a.filter(x=>{if(!x.expiry)return false;const d=(new Date(x.expiry)-new Date())/86400000;return d>=0&&d<=90}).length;const qty=a.reduce((t,x)=>t+(+x.qty||0),0);
+    return sdCustom(item,[['Medicine Items',a.length,'Stock entries'],['Total Quantity',qty,'Across stock units'],['Low Stock',low,'≤ 10 units'],['Expired',exp,'Expiry before today'],['Expiring ≤90 days',near,'Review stock']],a.slice().sort((x,y)=>(+x.qty||0)-(+y.qty||0)).slice(0,12).map(x=>[x.name,x.batch||'',x.qty||0,x.unit||'',x.expiry||'',x.source||'']),['Medicine','Batch','Qty','Unit','Expiry','Source']);
+  }
+  if(id==='medcons'){
+    const a=sdArr('meduse');const qty=a.reduce((t,x)=>t+(+x.qty||0),0);const days=new Set(a.map(x=>sdDate(x)).filter(Boolean)).size;const names=new Set(a.map(x=>x.name||x.med).filter(Boolean)).size;
+    return sdCustom(item,[['Consumption Entries',a.length,''],['Total Consumed',qty,'Recorded quantity'],['Days with Consumption',days,'Unique dates'],['Medicines Used',names,'Unique medicines']],a.slice().reverse().slice(0,15).map(x=>[x.date,x.name||x.med,x.batch||'',x.qty||0,x.unit||'',x.reason||'']),['Date','Medicine','Batch','Qty','Unit','Reason']);
+  }
+  if(id==='inventory'){
+    let a=[];try{a=JSON.parse(localStorage.getItem('hsc_inventory_v44')||'[]')}catch(e){}
+    const working=a.filter(x=>x.condition==='Working').length,breakdown=a.filter(x=>x.condition==='Breakdown').length,repair=a.filter(x=>x.condition==='Under Repair').length,cond=a.filter(x=>x.condition==='Condemned').length;
+    return sdCustom(item,[['Total Items',a.length,'Inventory records'],['Working',working,''],['Breakdown',breakdown,''],['Under Repair',repair,''],['Condemned',cond,'']],a.slice().reverse().slice(0,15).map(x=>[x.name,x.category,x.qty||'',x.serial||'',x.receivedDate||'',x.source||'',x.condition||'']),['Item','Category','Qty','Batch/Serial','Received','Source','Condition']);
+  }
+  if(id==='daily'){
+    const a=sdArr('daily');const opd=a.reduce((t,x)=>t+(+x.opd||0),0),ncd=a.reduce((t,x)=>t+(+x.ncd||0),0),anc=a.reduce((t,x)=>t+(+x.anc||0),0),ref=a.reduce((t,x)=>t+(+x.referral||0),0);
+    return sdCustom(item,[['Days Reported',a.length,'Daily report entries'],['OPD Total',opd,'Cumulative'],['NCD Screening',ncd,'Cumulative'],['ANC',anc,'Cumulative'],['Referral',ref,'Cumulative']],a.slice().reverse().slice(0,12).map(x=>[x.date,x.opd||0,x.male||0,x.female||0,x.ncd||0,x.anc||0,x.referral||0]),['Date','OPD','Male','Female','NCD','ANC','Referral']);
+  }
+  if(id==='referral'){
+    const a=sdArr('referrals');const open=a.filter(x=>!x.followups||!x.followups.length).length;const villages=new Set(a.map(x=>x.village).filter(Boolean)).size;return sdCustom(item,[['Total Referrals',a.length,''],['Open / Pending',open,'No follow-up recorded'],['Villages',villages,'Unique villages'],['Facilities',new Set(a.map(x=>x.facility).filter(Boolean)).size,'Referral destinations']],a.slice().reverse().slice(0,12).map(x=>[x.date,x.name,x.village,x.type,x.facility,x.reason]),['Date','Name','Village','Type','Facility','Reason']);
+  }
+  if(id==='delivery'){
+    const a=sdArr('deliveries');const male=a.filter(x=>x.sex==='Male').length,female=a.filter(x=>x.sex==='Female').length;return sdCustom(item,[['Deliveries',a.length,'Recorded deliveries'],['Male Babies',male,''],['Female Babies',female,''],['Villages',new Set(a.map(x=>x.village).filter(Boolean)).size,'Unique villages']],a.slice().reverse().slice(0,12).map(x=>[x.dob,x.mother,x.village,x.baby,x.sex,x.weight,x.type]),['Date','Mother','Village','Baby','Sex','Weight','Type']);
+  }
+  if(id==='village'){
+    const a=sdArr('villages');const hh=a.reduce((t,x)=>t+(+x.households||0),0);return sdCustom(item,[['Villages',a.length,'Registered villages'],['Households',hh,'Total households'],['Population',a.reduce((t,x)=>t+(+x.population||0),0),'If entered'],['Tagged ASHA',a.filter(x=>x.asha||x.ashaName).length,'Villages with ASHA']],a.slice(0,15).map(x=>[x.name||x.village,x.households||0,x.population||'',x.asha||x.ashaName||'',x.remark||'']),['Village','Households','Population','ASHA','Remarks']);
+  }
+  if(id==='ri'){const a=sdArr('ri');return sdCustom(item,[['RI Sessions',a.length,'Schedule entries'],['Villages',new Set(a.map(x=>x.village).filter(Boolean)).size,''],['AWCs',new Set(a.map(x=>x.awc).filter(Boolean)).size,''],['4th Week',a.filter(x=>String(x.week).includes('4')).length,'Scheduled']],a.slice(0,15).map(x=>[x.village,x.awc,x.week,x.day,x.remark||'']),['Village','AWC','Week','Day','Remark']);}
+  if(id==='activity'){const a=sdArr('acts');return sdCustom(item,[['Activities',a.length,'Total entries'],['Camps',a.filter(x=>/camp/i.test(x.type||'')).length,'Camp activities'],['Field Visits',a.filter(x=>/field/i.test(x.type||'')).length,''],['Meetings',a.filter(x=>/meeting/i.test(x.type||'')).length,'']],a.slice().reverse().slice(0,15).map(x=>[x.date,x.type,x.count||0,x.place||'',x.remark||'']),['Date','Activity','Count','Place','Remarks']);}
+  if(id==='elderly'){const a=sdArr('elderly');const p=sdArr('palliative');return sdCustom(item,[['Elderly Records',a.length,''],['Palliative Records',p.length,''],['Due Follow-up',a.filter(x=>x.next&&x.next<=today).length,'']],a.slice().reverse().slice(0,12).map(x=>[x.date,x.name,x.village,x.age,x.condition||x.diagnosis,x.next||'']),['Date','Name','Village','Age','Condition','Next Follow-up']);}
+  if(id==='linen')return sdArraySimple(item,'linen',['Date','Item','Issued','Returned','Condition']);
+  if(id==='movement')return sdArraySimple(item,'movements',['Date','Staff','Movement','From','To']);
+  if(id==='indent')return sdArraySimple(item,'indents',['Date','Item','Qty','Unit','Status']);
+  if(id==='bmw')return sdArraySimple(item,'bmw',['Date','Category','Quantity','Disposal','Remark']);
+  if(id==='sterilisation')return sdArraySimple(item,'sterilisation',['Date','Item','Method','Start','End','Result']);
+  if(id==='quality')return sdQuality(item);
+  if(id==='fpsupply')return sdArraySimple(item,'fpStock',['Item','Batch','Qty','Expiry','Source']);
+  if(id==='diagnostic')return sdArraySimple(item,'kits',['Kit/Test','Batch','Qty','Expiry','Unit']);
+  if(id==='diagcons')return sdArraySimple(item,'kituse',['Date','Kit/Test','Qty','Reason']);
+  if(id==='jas')return sdCustom(item,[['Receipts',sdCount('jasReceipts'),''],['Expenses',sdCount('jasExpenses'),''],['Receipt Amount',sdArr('jasReceipts').reduce((t,x)=>t+(+x.amount||0),0),''],['Expense Amount',sdArr('jasExpenses').reduce((t,x)=>t+(+x.amount||0),0),'']],sdArr('jasExpenses').slice().reverse().slice(0,12).map(x=>[x.date,x.bill||'',x.paidTo||'',x.amount||0,x.remark||'']),['Date','Bill','Paid To','Amount','Remarks']);
+  if(id==='kpiAuto')return sdKpiAuto(item);
+  if(id==='alerts')return sdAlerts(item);
+  return sdGeneric(item);
+}
+function sdCustom(item,metrics,rows,heads){
+  const bars=metrics.slice(0,4).map((m,i)=>`<div class="sd-bar"><div class="name">${esc(m[0])}</div><div class="track"><div class="fill" style="width:${Math.min(100,(Number(m[1])||0)>0?Math.min(100,20+((Number(m[1])||0)%80)):0)}%"></div></div><div class="num">${esc(m[1])}</div></div>`).join('');
+  return `<div class="sd-head"><div><div class="sd-title">${esc(item.label.replace(/^\S+\s/,''))} Dashboard</div><div class="sd-sub">Existing register data से automatically generated summary</div></div><div class="sd-actions"><button class="primary" onclick="go('${item.id}')">Open Register</button><button onclick="printSectionDashboard('${item.id}')">🖨️ Print / PDF</button></div></div><div class="sd-cards">${metrics.map(m=>sdMetric(m[0],m[1],m[2])).join('')}</div><div class="sd-grid"><div class="sd-panel"><h3>📈 Indicator Summary</h3>${bars||'<div class="sd-note">No indicators available.</div>'}</div><div class="sd-panel"><h3>📅 Last 6 Months</h3>${sdMonthPanel(item)}</div></div><div class="sd-panel" style="margin-top:10px"><h3>📋 Recent Data</h3>${rows&&rows.length?sdTable(heads,rows):'<div class="sd-empty">अभी इस section में कोई data saved नहीं है।</div>'}</div>`;
+}
+function sdArraySimple(item,key,heads){const a=sdArr(key);const metrics=[['Total Records',a.length,'Saved entries'],['This Month',a.filter(x=>sdDate(x).startsWith(thisMonth)).length,'Current month'],['Last 7 Days',a.filter(x=>{const d=new Date(sdDate(x));return d!='Invalid Date'&&((Date.now()-d.getTime())/86400000)<=7}).length,'Recent entries']];const rows=a.slice().reverse().slice(0,15).map(x=>{const vals=Object.values(x||{});return heads.map((h,i)=>vals[i]??'')});return sdCustom(item,metrics,rows,heads)}
+function sdQuality(item){const a=[...sdArr('pdca'),...sdArr('capa')];return sdCustom(item,[['PDCA',sdCount('pdca'),''],['CAPA',sdCount('capa'),''],['Total Quality Records',a.length,'']],a.slice().reverse().slice(0,15).map(x=>[x.date||'',x.issue||x.problem||'',x.action||x.correctiveAction||'',x.status||'',x.remark||'']),['Date','Issue / Problem','Action','Status','Remarks']);}
+function sdGeneric(item){const keys=item.keys.filter(k=>Array.isArray(S[k]));const a=keys.flatMap(k=>sdArr(k));const metrics=[['Total Records',a.length,'Across linked register(s)'],['This Month',a.filter(x=>sdDate(x).startsWith(thisMonth)).length,'Current month'],['Last 30 Days',a.filter(x=>{const d=new Date(sdDate(x));return d!='Invalid Date'&&((Date.now()-d.getTime())/86400000)<=30}).length,'Recent'],['Linked Registers',keys.length,'']];const rows=a.slice().reverse().slice(0,15).map(x=>{const vals=Object.values(x||{});return vals.slice(0,6)});return sdCustom(item,metrics,rows,rows.length?['Field 1','Field 2','Field 3','Field 4','Field 5','Field 6']:[])}
+function sdMonthPanel(item){const keys=item.keys.filter(k=>Array.isArray(S[k]));const a=keys.flatMap(k=>sdArr(k));const ms=sdMonthCount(a,6);const max=Math.max(1,...ms.map(x=>x.n));return ms.map(x=>`<div class="sd-bar"><div class="name">${esc(x.m)}</div><div class="track"><div class="fill" style="width:${Math.round(x.n/max*100)}%"></div></div><div class="num">${x.n}</div></div>`).join('')||'<div class="sd-note">No monthly data.</div>'}
+function sdTable(heads,rows){return `<div style="overflow:auto"><table class="sd-table"><thead><tr>${heads.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(v=>`<td>${sdSafe(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
+function sdKpiAuto(item){const d=sdArr('daily'),p=sdArr('patients'),a=sdArr('anc');const metrics=[['OPD',d.reduce((t,x)=>t+(+x.opd||0),0),'Cumulative daily reports'],['NCD Screening',d.reduce((t,x)=>t+(+x.ncd||0),0),'Cumulative'],['ANC',a.length,'ANC records'],['NCD Patients',p.filter(x=>x.ncd&&x.ncd!=='No').length,'NCD patient records'],['Referrals',sdCount('referrals'),''],['Medicine Items',sdCount('med'),'Stock entries']];return sdCustom(item,metrics,[],[])}
+function sdAlerts(item){const p=sdArr('patients'),a=sdArr('anc');const due=[...p,...a].filter(x=>x.next&&x.next<=today).length;const risks=p.filter(x=>{let bp=String(x.bp||'').match(/(\d{2,3})\s*[/\-]\s*(\d{2,3})/);return (bp&&(+bp[1]>=140||+bp[2]>=90))||(+x.rbs>=200)}).length;return sdCustom(item,[['Follow-up Due',due,'Patients + ANC'],['Clinical Risk',risks,'BP/RBS risk flags'],['Alert Recipients',Array.isArray(S.alertRecipients)?S.alertRecipients.length:0,'Saved recipients']],[],[])}
+function renderSectionDashNav(){const box=$('sectionDashNav');if(!box)return;box.innerHTML=SECTION_DASH_ITEMS.map(x=>`<button class="${x.id===activeSectionDash?'active':''}" onclick="showSectionDashboard('${x.id}')">${esc(x.label)}</button>`).join('')}
+function showSectionDashboard(id){activeSectionDash=id;renderSectionDashNav();const item=SECTION_DASH_ITEMS.find(x=>x.id===id)||SECTION_DASH_ITEMS[0];$('sectionDashDetail').innerHTML=sdDetail(item)}
+window.showSectionDashboard=showSectionDashboard;
+window.printSectionDashboard=function(id){const item=SECTION_DASH_ITEMS.find(x=>x.id===id)||SECTION_DASH_ITEMS[0];const detail=sdDetail(item);const w=open('','_blank');w.document.write(`<html><head><title>${item.label} Dashboard</title><style>@page{size:A4 landscape;margin:8mm}body{font-family:Arial,sans-serif;color:#182230;font-size:10px}h2{margin:0 0 8px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #444;padding:4px}th{background:#eee}.cards{display:flex;gap:7px;flex-wrap:wrap}.card{border:1px solid #aaa;padding:8px;min-width:120px}.value{font-size:18px;font-weight:bold}</style></head><body><h2>Ayushman Arogya Mandir Dharampur — ${item.label} Dashboard</h2>${detail.replace(/<button[\s\S]*?<\/button>/g,'')}</body></html>`);w.document.close();w.print()};
+document.addEventListener('DOMContentLoaded',()=>{renderSectionDashNav();showSectionDashboard('daily')});
 
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.v));
 function n(id){return +$(id).value||0}
