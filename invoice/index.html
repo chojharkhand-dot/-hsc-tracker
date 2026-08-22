@@ -323,11 +323,11 @@ function addOneDay(dateStr){
 
 function nextTripDate(){
   const rows=[...$("trips").querySelectorAll("tbody tr")];
-  if(rows.length){
-    const lastDate=rows[rows.length-1].querySelector('input[type="date"]');
-    if(lastDate && lastDate.value) return addOneDay(lastDate.value);
-  }
-  return today();
+  if(!rows.length) return "";
+  const lastDate=rows[rows.length-1].querySelector('input[type="date"]');
+  // Trip dates are completely independent of Invoice Date.
+  // The next trip is always one day after the last trip date.
+  return (lastDate && lastDate.value) ? addOneDay(lastDate.value) : "";
 }
 
 function updateFollowingDates(row){
@@ -377,7 +377,8 @@ function syncAllTripDates(){
 
 function clearTrips(){
   $("trips").querySelector("tbody").innerHTML="";
-  addTrip();
+  // Start with a blank Trip Date; user enters the first trip date manually.
+  addTrip("","",$("mainVehicle").value||"");
 }
 
 function calc(){
@@ -549,7 +550,7 @@ function loadBill(invoiceNo){
   });
   $("trips").querySelector("tbody").innerHTML="";
   (data.trips||[]).forEach(x=>addTrip(x.date||"",x.km||"",x.vehicle||""));
-  if(!(data.trips||[]).length) addTrip($("invoiceDate").value,"",$("mainVehicle").value);
+  if(!(data.trips||[]).length) addTrip("","",$("mainVehicle").value);
   calc();
   generateInvoice();
   window.scrollTo({top:0,behavior:"smooth"});
@@ -602,7 +603,8 @@ function newBill(){
   $("invoiceDate").value=today();
   ["customer","address","mobile"].forEach(id=>$(id).value="");
   $("trips").querySelector("tbody").innerHTML="";
-  addTrip(today(),"",$("mainVehicle").value||"");
+  // Invoice Date and Trip Date are independent. First Trip Date is entered manually.
+  addTrip("","",$("mainVehicle").value||"");
   $("invoice").style.display="none";
   calc();
   window.scrollTo({top:0,behavior:"smooth"});
