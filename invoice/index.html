@@ -428,8 +428,24 @@ function generateInvoice(){
   return c;
 }
 
+function getInvoiceSerial(value){
+  const m=String(value||"").match(/\/(\d+)\//);
+  return m ? Number(m[1]) : null;
+}
+
+function rememberInvoiceNo(){
+  const n=getInvoiceSerial($("invoiceNoInput").value);
+  if(n!==null) localStorage.setItem("manjulaLastInvoice",String(n));
+}
+
+function prepareNextInvoiceNo(){
+  rememberInvoiceNo();
+  autoInvoiceNo();
+}
+
 function printInvoice(){
   generateInvoice();
+  rememberInvoiceNo();
   setTimeout(()=>window.print(),200);
 }
 
@@ -451,14 +467,16 @@ function saveBill(){
     trips:tripData()
   };
   localStorage.setItem("manjulaBill_"+data.invoiceNo,JSON.stringify(data));
+  rememberInvoiceNo();
   alert("Bill saved on this laptop/browser.");
 }
 
 function autoInvoiceNo(){
-  const d=new Date(($("invoiceDate").value||today())+"T00:00:00");
+  const d=new Date(($('invoiceDate').value||today())+"T00:00:00");
   const y=d.getFullYear(), m=d.getMonth()+1;
   const fy=m>=4 ? `${String(y).slice(2)}-${String(y+1).slice(2)}` : `${String(y-1).slice(2)}-${String(y).slice(2)}`;
-  const saved=Number(localStorage.getItem("manjulaLastInvoice")||56)+1;
+  const current=Number(localStorage.getItem("manjulaLastInvoice")||56);
+  const saved=current+1;
   $("invoiceNoInput").value="MIS/LP/"+String(saved).padStart(3,"0")+"/"+fy;
 }
 
@@ -475,7 +493,11 @@ function setupTripDateHandler(){
 
 function init(){
   $("invoiceDate").value=today();
-  if(!$("invoiceNoInput").value.trim()) autoInvoiceNo();
+  if(localStorage.getItem("manjulaLastInvoice")){
+    autoInvoiceNo();
+  } else if(!$("invoiceNoInput").value.trim()){
+    autoInvoiceNo();
+  }
 
   ["rent","driver","fuel","toll","parking","gstRate","gstMode"].forEach(id=>{
     const el=$(id);
@@ -500,6 +522,10 @@ function init(){
 
 window.addEventListener("beforeprint",()=>{
   if(!$("pInvoice").textContent.trim()) generateInvoice();
+});
+
+window.addEventListener("afterprint",()=>{
+  prepareNextInvoiceNo();
 });
 
 document.addEventListener("DOMContentLoaded",init);
