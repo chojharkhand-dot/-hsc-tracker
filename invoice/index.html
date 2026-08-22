@@ -26,7 +26,7 @@ table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:7p
 .summary td:last-child{text-align:right;font-weight:700}
 .total{font-size:18px;font-weight:800}
 @media(max-width:800px){.grid,.two{grid-template-columns:1fr 1fr}}
-@media(max-width:550px){.grid,.two{grid-template-columns:1fr}}
+@media(max-width:550px){.grid{grid-template-columns:1fr}.invoice .two{grid-template-columns:1fr 1fr}}
 @media print{
   *{
     -webkit-print-color-adjust:exact!important;
@@ -47,7 +47,7 @@ table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:7p
     visibility:visible!important;
     width:100%!important;
     max-width:none!important;
-    height:277mm!important;
+    height:185mm!important;
     min-height:0!important;
     margin:0!important;
     padding:4mm!important;
@@ -131,8 +131,15 @@ table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:7p
     break-after:avoid!important;
     page-break-after:avoid!important;
   }
+  .invoice > .two{margin-top:5px!important;}
+  .invoice .box{padding:4px!important;}
+  .invoice table{margin-top:3px!important;}
+  .invoice .summary table{font-size:8.8px!important;}
+  .invoice .summary td,.invoice .summary th{font-size:8.6px!important;padding:2.5px 3px!important;line-height:1.05!important;}
+  .invoice .redtxt{font-size:9.5px!important;}
+  .invoice > div[style*="min-height"]{min-height:105px!important;}
   @page{
-    size:A4 portrait;
+    size:A4 landscape;
     margin:0;
   }
 }
