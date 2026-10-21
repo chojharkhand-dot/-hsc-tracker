@@ -464,9 +464,11 @@ function prepareNextInvoiceNo(){
 }
 
 function printInvoice(){
+  // Keep printing directly inside the user's button click.
+  // iPhone/iPad Safari may block window.print() when called later via setTimeout.
   generateInvoice();
   rememberInvoiceNo();
-  setTimeout(()=>window.print(),200);
+  window.print();
 }
 
 function getCurrentBillData(){
