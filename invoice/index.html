@@ -464,11 +464,15 @@ function prepareNextInvoiceNo(){
 }
 
 function printInvoice(){
-  // Keep printing directly inside the user's button click.
-  // iPhone/iPad Safari may block window.print() when called later via setTimeout.
+  // iOS Home Screen web apps may ignore print() if it is delayed.
+  // Keep the print call in the original button-click user gesture.
   generateInvoice();
   rememberInvoiceNo();
-  window.print();
+  try {
+    window.print();
+  } catch (error) {
+    alert("Is mode mein direct printing available nahi hai. Isi app ko Safari mein kholkar Share > Print ka use karein.");
+  }
 }
 
 function getCurrentBillData(){
